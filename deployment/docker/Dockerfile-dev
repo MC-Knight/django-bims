@@ -1,5 +1,5 @@
 #--------- Generic stuff all our Dockerfiles should start with so we get caching ------------
-FROM python:3.7-slim-stretch as prod
+FROM python:3.10-slim-bullseye as prod
 
 RUN mkdir -p /usr/src/{app,geonode}
 
@@ -30,7 +30,10 @@ RUN echo "Updating apt-get" && \
     rm -rf ~/.cache/pip
 
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
-RUN pip install -r /REQUIREMENTS.txt; pip install uwsgi
+ADD REQUIREMENTS-dev.txt /REQUIREMENTS-dev.txt
+RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
+    && pip install --no-cache-dir -r /REQUIREMENTS-dev.txt \
+    && pip install --no-cache-dir uwsgi
 
 # Install grunt
 RUN npm --quiet -g install yuglify && npm install -g grunt-cli
@@ -59,9 +62,7 @@ RUN echo "export VISIBLE=now" >> /etc/profile
 
 # End of cut & paste section
 
-ADD REQUIREMENTS-dev.txt /REQUIREMENTS-dev.txt
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python get-pip.py
-RUN pip install -r /REQUIREMENTS-dev.txt
 ADD bashrc /root/.bashrc
 
 # RUN apt-get install -y chromium
@@ -76,5 +77,6 @@ ADD bashrc /root/.bashrc
 # For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /home/web/django_project
 USER appuser
+
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi"]

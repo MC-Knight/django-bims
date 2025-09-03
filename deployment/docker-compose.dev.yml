@@ -1,16 +1,15 @@
-version: '3.7'
+version: "3.7"
 volumes:
   rabbitmq:
   geoserver-datadir:
-x-common-django:
-  &default-common-django
+x-common-django: &default-common-django
   build:
     context: ../
     dockerfile: deployment/docker/Dockerfile
     target: dev
   hostname: dev
-  command: ''
-  entrypoint: [ ]
+  command: ""
+  entrypoint: []
   environment:
     - ADMIN_EMAILS=${ADMIN_EMAILS:-dimas@kartoza.com}
     - APP_NAME=bims
@@ -43,7 +42,7 @@ x-common-django:
   restart: unless-stopped
   user: root
   extra_hosts:
-    - 'localhost: 192.168.1.197'
+    - "localhost:192.168.1.197"
   volumes:
     - ../../django-bims:/home/web/django_project
     - ./static:/home/web/static:rw
@@ -111,7 +110,7 @@ services:
       - ./static:/home/web/static:rw
       - ./media:/home/web/media:rw
       - ./scheduler-data:/home/scheduler-data
-    command: celery --app=bims.celery:app worker --schedule /home/geocontext-scheduler/celerybeat-schedule -B --schedule /home/scheduler-data/celerybeat-schedule -l debug
+    command: python -m celery --app=bims.celery:app worker --schedule /home/geocontext-scheduler/celerybeat-schedule -B --schedule /home/scheduler-data/celerybeat-schedule -l debug
 
   dev:
     <<: *default-common-django

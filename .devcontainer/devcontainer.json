@@ -1,0 +1,13 @@
+{
+  "name": "django-bims Dev Container",
+  "dockerComposeFile": "../deployment/docker-compose.dev.yml",
+  "service": "dev",
+  "workspaceFolder": "/home/web/django_project",
+  "runServices": ["dev"],
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [63302, 5555],
+  "extensions": ["ms-python.python", "ms-azuretools.vscode-docker"],
+  "settings": {
+    "python.pythonPath": "/usr/local/bin/python"
+  }
+}
