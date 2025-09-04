@@ -1,0 +1,71 @@
+.rbis-navbar {
+    background-color: #ffffff;
+    height: auto !important;
+    color: #00697d;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-bottom: 0 !important;
+    text-transform: capitalize;
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14pt !important;
+    padding: 10px 60px !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-links{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-links ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-links li {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.nav-links li a {
+    color: #00697d;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-links li a:hover {
+    color: #004d5c;
+}
+
+.nav-user{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.nav-user ul{
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 10px;
+}
+
+.nav-user li{
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border: 2px solid #00697d;
+    padding: 5px 20px;
+
+}

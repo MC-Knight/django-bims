@@ -1,11 +1,19 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+
 body {
-    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    box-sizing: border-box; //to account for the border on top
-    -o-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    height: 100%;
-    position: relative;
+    overflow-x: hidden;
+    background: #ffffff;
+    line-height: 1.2;
 }
 
 .bg-primary {
@@ -21,7 +29,7 @@ section {
 }
 
 #section-wrapper {
-    box-sizing: border-box; //to account for the padding
+    box-sizing: border-box; 
     -o-box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;

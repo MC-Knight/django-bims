@@ -21,6 +21,7 @@
     {% endif %}
     <title>{% block title %} {% if custom_theme.site_name %}{{ custom_theme.site_name }}{% else %}{{ APPLICATION_NAME }}{% endif %} | {% block subtitle %}{% endblock %} {% endblock %}</title>
 
+    <link href="https://fonts.googleapis.com/css?family=Alegreya:400,400i,500,500i,700,700i|Roboto+Condensed:100,100i,300,300i,400,400i,500,500i,700,700i" rel="stylesheet">
     <link href="{% static "js/libs/bootstrap-4.0.0/css/bootstrap.min.css" %}" rel="stylesheet">
     <link href="{% static "js/libs/font-awesome/css/font-awesome.min.css" %}" rel="stylesheet">
     <style>
@@ -40,6 +41,7 @@
         <link href="{% static "css/fbis/navbar.css" %}" rel="stylesheet">
     {% else %}
         <link href="{% static "css/navbar.css" %}" rel="stylesheet">
+        <link href="{% static "rbis/navbar.css" %}" rel="stylesheet">
     {% endif %}
     <link href="{% static "css/main.css" %}" rel="stylesheet">
     <link href="{% static "css/fonts.css" %}" rel="stylesheet">
