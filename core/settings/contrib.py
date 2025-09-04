@@ -453,3 +453,4 @@ CACHES = {
 FILE_UPLOAD_PERMISSIONS = 0o644
 LOGIN_URL = '/accounts/login/'
 LOGOUT_URL = '/accounts/logout/'
+LOGOUT_REDIRECT_URL='/'

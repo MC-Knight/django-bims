@@ -126,17 +126,19 @@
         $moduleInfoContainer.append(
             `<p class="module-info" style="margin-bottom: 0; font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Records</p>`
         )
-        $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-top: 0; margin-bottom: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSite)}</span> Sites</p>`
-        )
-        $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSiteVisit)}</span> Site Visits</p>`
-        )
-        if (totalSass > 0) {
-            $moduleInfoContainer.append(
-                `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSass)}</span> SASS assessments</p>`
-            )
-        }
+
+
+        // $moduleInfoContainer.append(
+        //     `<p class="module-info" style="margin-top: 0; margin-bottom: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSite)}</span> Sites</p>`
+        // )
+        // $moduleInfoContainer.append(
+        //     `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSiteVisit)}</span> Site Visits</p>`
+        // )
+        // if (totalSass > 0) {
+        //     $moduleInfoContainer.append(
+        //         `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSass)}</span> SASS assessments</p>`
+        //     )
+        // }
 
         container.append($moduleInfoContainer);
 
@@ -166,6 +168,9 @@
                 $('.module-loading').hide();
                 const $container = $('.summary-data');
                  $.each(data, function(key, summaryData) {
+                    if(key === "general_summary"){
+                        return;
+                    }
                      let _container = $(`<div class="col-lg-2 col-md-3 col-sm-12 module-container"></div>`);
                      $container.append(_container);
                      createModuleCharts(

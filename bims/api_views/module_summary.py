@@ -1,10 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Count, F, Case, When, Value
+from django.db.models import Count, F, Case, When, Value, Q
+from allauth.utils import get_user_model
 from bims.models import (
     TaxonGroup,
     BiologicalCollectionRecord,
-    IUCNStatus
+    IUCNStatus,
+    DownloadRequest,
+    Survey
 )
 from bims.models.taxonomy import Taxonomy
 from bims.enums.taxonomic_group_category import TaxonomicGroupCategory
@@ -118,8 +121,61 @@ class ModuleSummary(APIView):
         )
         return summary
 
+    def general_summary_data(self):
+        """
+        This function calculates a summary of key metrics
+        including total occurrences, total taxa,
+        total users, total uploads, and total downloads.
+
+        Returns:
+            dict: A dictionary containing the calculated summary metrics.
+        """
+        upload_counts = Survey.objects.exclude(
+            Q(owner__username__icontains='gbif') |
+            Q(owner__username__icontains='admin') |
+            Q(owner__username__icontains='map_vm')
+        ).count()
+
+        taxon_groups = TaxonGroup.objects.filter(
+            category=TaxonomicGroupCategory.SPECIES_MODULE.name
+        )
+
+        # Use the same relationship structure as your existing code
+        total_occurrences = 0
+        total_taxa = 0
+        
+        for taxon_group in taxon_groups:
+            # Count occurrences using the same filter as your existing module_summary_data
+            occurrences_count = BiologicalCollectionRecord.objects.filter(
+                module_group=taxon_group
+            ).count()
+            total_occurrences += occurrences_count
+            
+            # Count taxa for this taxon group
+            taxa_count = BiologicalCollectionRecord.objects.filter(
+                module_group=taxon_group
+            ).values('taxonomy').distinct().count()
+            total_taxa += taxa_count
+
+        counts = {
+            'total_occurrences': total_occurrences,
+            'total_taxa': total_taxa,
+            'total_users': get_user_model().objects.filter(
+                last_login__isnull=False
+            ).count(),
+            'total_uploads': upload_counts,
+            'total_downloads': DownloadRequest.objects.all().count()
+        }
+
+        return counts
+
     def get(self, request, *args):
         response_data = dict()
+        
+        # Add general summary
+        response_data['general_summary'] = self.general_summary_data()
+        
+        # Add taxon group summaries
         taxon_groups = TaxonGroup.objects.filter(
             category=TaxonomicGroupCategory.SPECIES_MODULE.name,
         ).order_by('display_order')

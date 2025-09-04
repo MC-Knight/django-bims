@@ -1,7 +1,7 @@
 {% load site %}
 <style>
     footer {
-        padding: 50px 0 65px;
+        padding: 25px;
         font-family: 'Roboto', 'Times New Roman', serif;
         font-weight: 300;
     }
@@ -12,7 +12,7 @@
     }
 
     footer .copyright {
-        font-size: 14px;
+        font-size: 15px;
         margin-bottom: 0;
         text-align: center;
     }
@@ -23,9 +23,9 @@
     }
 </style>
 
-<hr class="footer-hr" style="border-color: #c6c6c6"/>
+<!-- <hr class="footer-hr" style="border-color: #c6c6c6"/> -->
 <!-- Footer -->
 <footer>
     <p class="copyright text-muted">{{ preferences.SiteSetting.copyright_text }} {% now 'Y' %}</p>
-    <p class="copyright text-muted"> Version : {% current_version %} </p>
+    <!-- <p class="copyright text-muted"> Version : {% current_version %} </p> -->
 </footer>

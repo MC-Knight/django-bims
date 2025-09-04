@@ -53,90 +53,77 @@
     <div class="rbis-status">
         <div class="rbis-status-card">
             <img src="{% static 'new_images/occurrences-icon.d2d9d02a9220.png' %}" alt="Taxa Icon"/>
-            <h2>200,456</h2>
+            <h2 id="totalOccurenceNumber">0</h2>
             <p>Occurrence Records</p>
         </div>
 
         <div class="rbis-status-card">
             <img src="{% static 'new_images/taxa-icon.70ae121e6b3f.png' %}" alt="Taxa Icon"/>
-            <h2>8,908</h2>
+            <h2 id="totalTaxaNumber">0</h2>
             <p>Taxa</p>
         </div>
 
 
         <div class="rbis-status-card">
             <img src="{% static 'new_images/users-icon.0a0914af9401.png' %}" alt="Taxa Icon"/>
-            <h2>340</h2>
+            <h2 id="totalUsersNumber">0</h2>
             <p>Users</p>
         </div>
 
 
         <div class="rbis-status-card">
             <img src="{% static 'new_images/upload-icon.6f5b1f58b5ea.png' %}" alt="Taxa Icon"/>
-            <h2>24,567</h2>
+            <h2 id="totalUploadsNumber">0</h2>
             <p>User uploads</p>
         </div>
 
 
         <div class="rbis-status-card">
             <img src="{% static 'new_images/download-icon.a258f8b4a58f.png' %}" alt="Taxa Icon"/>
-            <h2>3,456</h2>
+            <h2 id="totalDownloads">0</h2>
             <p>User downloads</p>
         </div>
        
     </div>
 
-    <div class="rbis-whatis"></div>
+    <div class="rbis-whatis">
+        <img src="{% static 'new_images/fbis2.png' %}" alt="Taxa Icon"/>
+        <div class="rbis-whatis-text">
+            <h1>What is RBIS?</h1>
+            <p>The RBIS is a powerful, visual, data-rich information system for hosting and serving biodiversity data in Rwanda. It serves as a platform for the inventory and maintenance of data, thereby facilitating the evaluation of long-term change in biodiversity and ecosystem condition, and guiding future monitoring strategies and management decisions.</p>
+           
+        </div>  
+    </div>
+
+    {% if custom_theme.partners.all %}
+    <div class="grid-logos">
+        <div class="container">
+            <div class="row">
+                 <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-heading">{{ preferences.SiteSetting.landing_page_partners_title }}</h2>
+                </div>
+                <div class="partner-container">
+                    <div class="flex-container">
+                        {% for partner in custom_theme.partners.all %}
+                            <div class="flex-item">
+                                <a href="{{ partner.link }}" target="_blank">
+                                    <img src="{{ partner.logo.url }}" alt="1" class="img-responsive" data-toggle="tooltip" data-placement="bottom" title="{{ partner.name }}">
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
 
 
 
     <div id="section-wrapper">
         <div id="header-wrapper">
-         
-            {% if custom_theme.landing_page_sections %}
-                {% for landing_page_section in custom_theme.landing_page_sections.all %}
-                    <section class="biodiversity-data-container custom-sections" style="position: relative;">
-                        <div class="container">
-                            {% if landing_page_section.title %}
-                                <div class="row">
-                                    <div class="col-lg-8 mx-auto text-center">
-                                        <h2 class="section-heading">{{ landing_page_section.title }}</h2>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            {% for section_content in landing_page_section.contents.all %}
-                                <div class="row">
-                                    {{ section_content.content | safe }}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </section>
-                {% endfor %}
-            {% endif %}
-            {% if custom_theme.partners.all %}
-            <section class="biodiversity-data-container grid-logos" style="position: relative;">
-                <div class="container" style="margin-bottom: 25px">
-                    <div class="row">
-                        <div class="col-lg-8 mx-auto text-center">
-                            <h2 class="section-heading">{{ preferences.SiteSetting.landing_page_partners_title }}</h2>
-                        </div>
-                        <div class="partner-container">
-                            <div class="flex-container">
-                                {% for partner in custom_theme.partners.all %}
-                                    <div class="flex-item">
-                                        <a href="{{ partner.link }}" target="_blank">
-                                            <img src="{{ partner.logo.url }}" alt="1" class="img-responsive" data-toggle="tooltip" data-placement="bottom" title="{{ partner.name }}">
-                                        </a>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </section>
-            {% endif %}
+            
 
             {% if custom_theme.is_footer_enabled %}
                 <footer>
@@ -215,5 +202,26 @@
             $('[data-toggle="tooltip"]').tooltip();
             $('[data-toggle="popover"]').popover();
         });
+    </script>
+
+    <script>
+        function getNumberWithCommas(number) {
+            try {
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } catch (e) {
+                return ''
+            }
+        }
+
+
+        $.get('/api/module-summary').then(
+            function (data){
+                $('#totalOccurenceNumber').text(getNumberWithCommas(data["general_summary"].total_occurrences));
+                $('#totalTaxaNumber').text(getNumberWithCommas(data["general_summary"].total_taxa));
+                $('#totalUsersNumber').text(getNumberWithCommas(data["general_summary"].total_users));
+                $('#totalUploadsNumber').text(getNumberWithCommas(data["general_summary"].total_uploads));
+                $('#totalDownloads').text(getNumberWithCommas(data["general_summary"].total_downloads));
+            }
+        )
     </script>
 {% endblock %}

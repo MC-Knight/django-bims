@@ -1,78 +1,5 @@
 {% load static from staticfiles %}
 {% load site %}
-{#<nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">#}
-{#    <div class="container">#}
-{#        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target=".navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">#}
-{#            Menu#}
-{#        </button>#}
-{#        <div class="collapse navbar-collapse navbarResponsive">#}
-{#            <ul class="navbar-nav">#}
-{#                <li class="dropdown">#}
-{#                    <div class="btn" id="menu-dropdown-burger" data-toggle="dropdown">#}
-{#                        <i class="fa fa-reorder user-icon"></i>#}
-{#                    </div>#}
-{#                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="menu-dropdown-burger">#}
-{#                        <a class="dropdown-item" href="/">HOME</a>#}
-{#                        <a class="dropdown-item" href="/map">MAP</a>#}
-{#                        <a class="dropdown-item"#}
-{#                           href="/pages/about_us/">ABOUT US</a>#}
-{#                        <a class="dropdown-item" id="navbar-ext-resources" href="{% url 'link_list' %}">LINKS</a>#}
-{#                        {% if user.is_authenticated %}#}
-{#                            <a class="dropdown-item" href="/tracking/">SITE#}
-{#                                STATISTICS</a>#}
-{#                            <a class="dropdown-item" id="navbar-doc-report" href="/documents/">DOCUMENTS</a>#}
-{#                        {% endif %}#}
-{#                        <a class="dropdown-item" id="navbar-contact" href="/contact/">CONTACT</a>#}
-{#                        <a class="dropdown-item" id="navbar-biblio" href="/bibliography/">BIBLIOGRAPHY</a>#}
-{#                        {% if is_sass_enabled %}#}
-{#                            <a class="dropdown-item" id="navbar-biblio" href="/sass/list/">SASS</a>#}
-{#                        {% endif %}#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/blog/">BLOG</a>#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/upload-taxa/">UPLOAD TAXA</a>#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/upload-collections/">UPLOAD COLLECTIONS</a>#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/harvest-collections/">HARVEST FROM GBIF</a>#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/dashboard-management/">EDIT DASHBOARD</a>#}
-{#                        <a class="dropdown-item" id="navbar-geonode" href="/taxa-management/">EDIT TAXA</a>#}
-{#                         {% if user.is_authenticated %}#}
-{#                             <div class="dropdown-divider"></div>#}
-{#                            <a class="dropdown-item" id="navbar-geonode" href="/layers">GIS CATALOGUE</a>#}
-{#                        {% endif %}#}
-{#                    </div>#}
-{#                </li>#}
-{#            </ul>#}
-{#        </div>#}
-{#        <div class="collapse navbar-collapse navbarResponsive" id="navbarResponsive">#}
-{#            <ul class="navbar-nav ml-auto">#}
-{#                <li class="dropdown">#}
-{#                    <div class="btn" id="menu-dropdown-account" data-toggle="dropdown" href="#">#}
-{#                        <i class="fa fa-user user-icon"></i>#}
-{#                    </div>#}
-{#                    <div class="dropdown-menu right-nav-dropdown" aria-labelledby="menu-dropdown-account">#}
-{#                        {% if user.is_authenticated %}#}
-{#                            <a class="dropdown-item" id="navbar-profile" href="/profile/">PROFILE</a>#}
-{#                            {% if perms.bims.can_upload_csv and bims_preferences.enable_upload_data %}#}
-{#                                <a class="dropdown-item" id="navbar-upload" href="{% block upload_data_url %}/upload/{% endblock %}">UPLOAD DATA</a>#}
-{#                            {% endif %}#}
-{#                            {% if user.is_staff or user.is_superuser %}#}
-{#                                <a class="dropdown-item" href="/admin/">ADMINISTRATION</a>#}
-{#                            {% endif %}#}
-{#                            <a class="dropdown-item" id="navbar-geonode" href="/cms">WAGTAIL ADMIN</a>#}
-{#                            <a class="dropdown-item" href="/nonvalidated-user-list/">UPDATE RECORDS</a>#}
-{#                            <a class="dropdown-item" href="/site-visit/list/?collectors=[{{ user.id }}]">MY SITE VISITS</a>#}
-{#                            <a class="dropdown-item" href="/location-site-form/add/">ADD SITE</a>#}
-{#                            <div class="dropdown-divider"></div>#}
-{#                            <a class="dropdown-item" href="/accounts/logout/"><i class="fa fa-sign-out"></i> LOGOUT</a>#}
-{#                        {% else %}#}
-{#                            <a class="dropdown-item" id="navbar-geonode" href="/cms">WAGTAIL ADMIN</a>#}
-{#                            <a class="dropdown-item" href="/accounts/login/"><i class="fa fa-sign-in"></i> LOGIN</a>#}
-{#                            <a class="dropdown-item" href="/accounts/signup/">SIGN UP</a>#}
-{#                        {% endif %}#}
-{#                    </div>#}
-{#                </li>#}
-{#            </ul>#}
-{#        </div>#}
-{#    </div>#}
-{#</nav>#}
 
 
 <!-- new rbis nabar -->
@@ -80,7 +7,7 @@
     {% current_domain as domain_name %}
     <a class="navbar-brand bims-title-big" href="{{ domain_name }}/" style="padding-top: 0 !important; padding-bottom: 0 !important;">
         {% if custom_theme.logo %}
-            <img src="{{ custom_theme.logo.url }}" height="35"/>
+            <img src="{{ custom_theme.logo.url }}" height="40" width="50"/>
         {% else %}
             {% if custom_theme.site_name %}{{ custom_theme.site_name }}{% else %}{{ APPLICATION_NAME }}{% endif %}
         {% endif %}
@@ -103,11 +30,12 @@
                 <a class="nav-link" href="{{ domain_name }}">Citation</a>
             </li>
         </ul>
+   
 
     {% if request.get_host in domain_name %}
     <div class="nav-user">
-        {% if user.is_authenticated %}
-        <p>authenticated</p>
+        {% if user.is_authenticated %}      
+        <p id="toggle-authenticated-navbar">{{ user }} <i class="fa fa-caret-down" aria-hidden="true"></i></p>
         {% else %}
         <ul>
             <li>
@@ -120,6 +48,104 @@
         {% endif %}
     </div>
     {% endif %}
+    </div>
+
+    <span id="toggle-navbar" class="nav-links-toggler-icon"><i class="fa fa-bars" aria-hidden="true"></i></span>
+
+    <div class="small-screen-navbar">
+        <span id="toggle-close-navbar" class="nav-links-close-icon"><i class="fa fa-times" aria-hidden="true"></i></span>
+         <ul>
+            <li>
+                <a class="small-screen-nav-link" href="{{ domain_name }}">About</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="{{ domain_name }}/map">Map</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="{{ domain_name }}">Contact</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="{{ domain_name }}">Help</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="{{ domain_name }}">Citation</a>
+            </li>
+            {% if request.get_host in domain_name %}
+                {% if user.is_authenticated %}
+                    <li>
+                        <a class="small-screen-nav-link" href="/profile/">Profile</a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a class="small-screen-nav-link" href="/accounts/login/">Login</a>
+                    </li>
+                    <li>
+                        <a class="small-screen-nav-link" href="/accounts/signup/">Sign Up</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+        </ul>
+    </div>
+
+
+    <div class="authenticated-navbar">
+        <span id="toggle-authenticated-close-navbar" class="nav-links-close-icon"><i class="fa fa-times" aria-hidden="true"></i></span>
+         <ul>
+            <li>
+                <a class="small-screen-nav-link" href="/profile/">profile</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/site-visit/list/?&collectors=%5B{{ user.id }}%5D">Site Visits</a>
+            </li>
+            {% if user.is_staff or user.is_superuser %}
+            <li class="nav-indicator">Upload</li>
+             <li>
+                <a class="small-screen-nav-link" href="/upload-taxa/">Taxonomic Data</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/upload-collections/">Occurrence Data</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/upload-physico-chemical/">Physico-chemical Data</a>
+            </li>
+            <li class="nav-divider"></li>
+            <li>
+                <a class="small-screen-nav-link" href="/harvest-collections/">Harvest From GBIF</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/location-site-form/add/">Add Site</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/dashboard-management/">Edit Dashboard</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/taxa-management/">Taxon Management</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/download-request/">Download Requests</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/site-visit/list/?&inReview=True">Validate Records</a>
+            </li>
+            <li class="nav-divider"></li>
+            <li>
+                <a class="small-screen-nav-link" href="/admin/">Admin Page</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/cms">Wagtail Admin</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/backups-management">Backups</a>
+            </li>
+            <li>
+                <a class="small-screen-nav-link" href="/summary-report">Summary Report</a>
+            </li>
+            {% endif %}
+            <li class="nav-divider"></li>
+            <li>
+                <a class="small-screen-nav-link" href="/accounts/logout/">Log Out</a>
+            </li>
+        </ul>
     </div>
 </nav>
 
@@ -303,4 +329,36 @@
         $('.bims-title-acc').html(titleLong);
     }
 
+</script>
+
+<script>
+    $(document).ready(function(){
+        $("#toggle-navbar").click(function(){
+            $(".small-screen-navbar").css("right", "0");
+            $(document.body).css("overflow-y", "hidden");
+        });
+    });
+
+    $(document).ready(function(){
+        $("#toggle-close-navbar").click(function(){
+            $(".small-screen-navbar").css("right", "-250px");
+            $(document.body).css("overflow-y", "auto");
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function(){
+        $("#toggle-authenticated-navbar").click(function(){
+            $(".authenticated-navbar").css("right", "0");
+            $(document.body).css("overflow-y", "hidden");
+        });
+    });
+
+    $(document).ready(function(){
+        $("#toggle-authenticated-close-navbar").click(function(){
+            $(".authenticated-navbar").css("right", "-250px");
+            $(document.body).css("overflow-y", "auto");
+        });
+    });
 </script>
