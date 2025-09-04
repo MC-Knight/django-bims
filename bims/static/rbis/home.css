@@ -33,6 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 20px;
 }
 
@@ -51,7 +52,10 @@
     align-items: center;
     border: 3px solid #d7cd47;
     padding: 10px 40px;
+    color: #d7cd47;
+    transition: all 0.5s ease-in;
 }
+
 
 .rbis-home-links li a{
     color: #d7cd47;
@@ -59,6 +63,15 @@
     font-size: 20px;
     font-weight: 500;
     cursor: pointer;
+}
+
+.rbis-home-links li:hover {
+    background: #d7cd47;
+}
+
+.rbis-home-links li:hover a {
+    color: #ffffff;
+    text-decoration: none;
 }
 
 .rbis-occurrence-records{
@@ -145,7 +158,6 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    flex-wrap: wrap;
     gap: 20px;
 }
 
@@ -180,4 +192,82 @@
     margin: 0;
     padding: 0;
     line-height: 1.6;
+}
+
+.citation{
+    background-color: #f8f9fa;
+    padding: 60px 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.citation h1{
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #00697d;
+    font-size: 30px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+}
+
+.citation p{
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #595959;
+    font-size: 18px;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.citation a{
+    color: #00697d;
+    text-decoration: none;
+}
+
+@media screen and (max-width: 850px) {
+    .rbis-home h1{
+        font-size: 40px;
+    }
+
+    .rbis-home p{
+        font-size: 20px;
+    }
+
+    .rbis-home-links{
+        flex-direction: column;
+    }
+
+    .rbis-home-links ul{
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .rbis-home-links li{
+        width: 100%;
+    }
+    .rbis-whatis{
+        width: 100%;
+        padding: 20px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .rbis-whatis img{
+        width: 150px;
+        height: 150px;
+    }
+    .rbis-whatis-text{
+        width: 100%;
+    }
+    .rbis-whatis-text h1{
+        width: 100%;
+        font-size: 30px;
+    }
+    .rbis-whatis-text p{
+        width: 100%;
+        font-size: 18px;
+    }
 }
