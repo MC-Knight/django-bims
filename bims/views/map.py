@@ -4,6 +4,7 @@ from distutils import util as distutil
 from django.db.models import Max, Min
 from django.views.generic import TemplateView
 from django.contrib.flatpages.models import FlatPage
+from django.contrib.auth.mixins import LoginRequiredMixin
 from bims.utils.get_key import get_key
 from bims.models.biological_collection_record import (
     BiologicalCollectionRecord
@@ -15,7 +16,7 @@ from bims.models.basemap_layer import BaseMapLayer
 from bims.serializers.basemap_serializer import BaseMapLayerSerializer
 
 
-class MapPageView(TemplateView):
+class MapPageView(LoginRequiredMixin,TemplateView):
     """Template view for map page"""
     template_name = 'map_page/bims.html'
 

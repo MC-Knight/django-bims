@@ -30,12 +30,12 @@
         <p>RBIS | Rwanda Biodiversity Information System</p>
         <div class="rbis-home-links">
             <ul>
-                <li>
+                <!-- <li>
                     <a class="nav-link" href="/accounts/login/">Login</a>
                 </li>
                 <li>
                     <a class="nav-link" href="/accounts/signup/">Sign Up</a>
-                </li>
+                </li> -->
                 <li>
                     <a class="nav-link" href="/map">Explore</a>
                 </li>
@@ -43,8 +43,9 @@
         </div>
     </div>
 
-    <div class="rbis-occurrence-records">
-        <h1>Biodiversity Records</h1>
+    {% if user.is_authenticated %}
+    <div id="basicdashboard" class="rbis-occurrence-records">
+        <h1>Biodiversity of Rwanda</h1>
         {% include 'landing_page_dashboard.html' %}
         <a href="/map"><i class="fa fa-map-o"></i> &nbsp;Explore Map »</a>
     </div>
@@ -85,6 +86,7 @@
         </div>
        
     </div>
+    {% endif %}
 
     <div id="citation" class="citation">
         <h1>To Cite RBIS:</h1>
@@ -229,5 +231,24 @@
                 $('#totalDownloads').text(getNumberWithCommas(data["general_summary"].total_downloads));
             }
         )
+    </script>
+    <script>
+        $(document).ready(function() {
+            const imagesArray = [
+                "{% static 'new_images/frog1.jpg' %}",
+                "{% static 'new_images/snake.jpg' %}",
+                "{% static 'new_images/flower.jpg' %}",
+                "{% static 'new_images/flower1.jpg' %}",
+                "{% static 'new_images/ant.jpg' %}",
+            ];
+
+            let currentIndex = 0;
+            function changeBackgroundImage() {
+                currentIndex = (currentIndex + 1) % imagesArray.length;
+                $('.rbis-home').css('background-image', 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url(' + imagesArray[currentIndex] + ')');
+            }
+            $('.rbis-home').css('transition', 'background-image 1s ease-in-out');
+            setInterval(changeBackgroundImage, 5000);
+        });
     </script>
 {% endblock %}

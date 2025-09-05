@@ -20,8 +20,13 @@
             <li>
                 <a class="small-screen-nav-link" href="https://coebiodiversity.ur.ac.rw/" target="_blank">About CoEB</a>
             </li>
+            {% if user.is_authenticated %}
             <li>
                 <a class="nav-link" href="{{ domain_name }}/map">Map</a>
+            </li>
+            {% endif %}
+            <li>
+                <a class="nav-link" href="{{ domain_name }}/map">Resources</a>
             </li>
             <li>
                 <a class="nav-link" href="{{ domain_name }}#citation">Citation</a>
