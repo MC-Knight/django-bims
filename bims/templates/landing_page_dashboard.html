@@ -30,6 +30,7 @@
         const img = new Image();
         let chartWrapper = $('<div class="chart-icon-wrapper" />');
         img.classList = 'module-icon';
+        img.style = 'width: 40px; height: 40px; margin-right: auto; margin-left: auto; display: block;s';
         img.src = moduleData['icon'];
         chartWrapper.append(img);
         let canvas = $(`<div class="donut-chart"><canvas id="chart-${moduleName}" width="150px" height="150px"></canvas></div>`);
@@ -124,33 +125,13 @@
         let $moduleInfoContainer = $(`<div class="module-info-container"/>`);
 
         $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurence Records</p>`
+            `<p class="module-info" style="margin-bottom: 0; font-size: 1em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurence Records</p>`
         )
 
-        $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Total Orders</p>`
-        )
+        if(moduleData.taxon_group_id){
+            loadTotalCounts(moduleData.taxon_group_id, $moduleInfoContainer);
+        }
 
-        $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Total Families</p>`
-        )
-
-        $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Total Species</p>`
-        )
-
-
-        // $moduleInfoContainer.append(
-        //     `<p class="module-info" style="margin-top: 0; margin-bottom: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSite)}</span> Sites</p>`
-        // )
-        // $moduleInfoContainer.append(
-        //     `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSiteVisit)}</span> Site Visits</p>`
-        // )
-        // if (totalSass > 0) {
-        //     $moduleInfoContainer.append(
-        //         `<p class="module-info" style="margin-top: 0;font-size: 1.5em"><span class="module-numbers">${getNumberWithCommas(totalSass)}</span> SASS assessments</p>`
-        //     )
-        // }
 
         container.append($moduleInfoContainer);
 
@@ -179,11 +160,8 @@
             function (data) {
                 $('.module-loading').hide();
                 const $container = $('.summary-data');
-                 $.each(data, function(key, summaryData) {
-                    if(key === "general_summary"){
-                        return;
-                    }
-                     let _container = $(`<div class="col-lg-2 col-md-3 col-sm-12 module-container"></div>`);
+                 $.each(data, function(key, summaryData) {                  
+                     let _container = $(`<div class="col-lg-2 col-md-8 col-sm-8 module-container"></div>`);
                      $container.append(_container);
                      createModuleCharts(
                          summaryData,
@@ -193,5 +171,29 @@
                  });
             }
         )
+    }
+
+    function loadTotalCounts(taxonGroupId, container) {
+        const requests = [
+            { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Total Species', type: 'species' },
+            { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Total Families', type: 'families' },
+            { endpoint: `/api/taxon-group-orders/${taxonGroupId}/`, label: 'Total Orders', type: 'orders' }
+        ];
+        
+        requests.forEach(request => {
+            $.get(request.endpoint)
+                .then(function(data) {
+                    if (data && data.total) {
+                        container.append(
+                            `<p class="module-info" style="margin-bottom: 0; font-size: 1em">
+                                <span class="module-numbers">${getNumberWithCommas(data.total)}</span> ${request.label}
+                            </p>`
+                        );
+                    }
+                })
+                .catch(function(error) {
+                    console.error(`Error loading total ${request.type}:`, error);
+                });
+        });
     }
 </script>

@@ -7,6 +7,7 @@
     text-transform: capitalize;
     font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14pt !important;
+    font-weight: 500 !important;
     padding: 20px 60px !important;
     display: flex;
     align-items: center;

@@ -1,0 +1,57 @@
+{% load static %}
+<div class="rbis-status">
+    <div class="rbis-status-card">
+        <img src="{% static 'new_images/occurrences-icon.d2d9d02a9220.png' %}" alt="Taxa Icon"/>
+        <h2 id="totalOccurenceNumber">0</h2>
+        <p>Occurrence Records</p>
+    </div>
+
+    <div class="rbis-status-card">
+        <img src="{% static 'new_images/taxa-icon.70ae121e6b3f.png' %}" alt="Taxa Icon"/>
+        <h2 id="totalTaxaNumber">0</h2>
+        <p>Taxa</p>
+    </div>
+
+
+    <div class="rbis-status-card">
+        <img src="{% static 'new_images/users-icon.0a0914af9401.png' %}" alt="Taxa Icon"/>
+        <h2 id="totalUsersNumber">0</h2>
+        <p>Users</p>
+    </div>
+
+
+    <div class="rbis-status-card">
+        <img src="{% static 'new_images/upload-icon.6f5b1f58b5ea.png' %}" alt="Taxa Icon"/>
+        <h2 id="totalUploadsNumber">0</h2>
+        <p>User uploads</p>
+    </div>
+
+
+    <div class="rbis-status-card">
+        <img src="{% static 'new_images/download-icon.a258f8b4a58f.png' %}" alt="Taxa Icon"/>
+        <h2 id="totalDownloads">0</h2>
+        <p>User downloads</p>
+    </div>
+    
+</div>
+
+    <script>
+        function getNumberWithCommas(number) {
+            try {
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } catch (e) {
+                return ''
+            }
+        }
+
+
+        $.get('/api/general-module-summary').then(
+            function (data){
+                $('#totalOccurenceNumber').text(getNumberWithCommas(data.total_occurrences));
+                $('#totalTaxaNumber').text(getNumberWithCommas(data.total_taxa));
+                $('#totalUsersNumber').text(getNumberWithCommas(data.total_users));
+                $('#totalUploadsNumber').text(getNumberWithCommas(data.total_uploads));
+                $('#totalDownloads').text(getNumberWithCommas(data.total_downloads));
+            }
+        )
+    </script>

@@ -109,31 +109,31 @@ class ModuleSummary(APIView):
             summary['conservation-status'] = updated_summary
 
         # FAST: Only counts for taxonomy hierarchy
-        from bims.enums.taxonomic_rank import TaxonomicRank
+        # from bims.enums.taxonomic_rank import TaxonomicRank
         
-        unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
-        taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
+        # unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
+        # taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
         
         # Collect unique names efficiently
-        order_names = set()
-        family_names = set()
-        species_count = 0
+        # order_names = set()
+        # family_names = set()
+        # species_count = 0
         
-        for taxonomy in taxonomies:
-            if taxonomy.order_name:
-                order_names.add(taxonomy.order_name)
-            if taxonomy.family_name:
-                family_names.add(taxonomy.family_name)
-            if taxonomy.rank in [TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]:
-                species_count += 1
+        # for taxonomy in taxonomies:
+        #     if taxonomy.order_name:
+        #         order_names.add(taxonomy.order_name)
+        #     if taxonomy.family_name:
+        #         family_names.add(taxonomy.family_name)
+        #     if taxonomy.rank in [TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]:
+        #         species_count += 1
         
-        # ADD: Include taxon group ID for reference
-        summary['taxon_group_id'] = taxon_group.id
-        summary['orders'] = {'total': len(order_names)}
-        summary['families'] = {'total': len(family_names)}
-        summary['species'] = {'total': species_count}
+        # # ADD: Include taxon group ID for reference
+        # summary['orders'] = {'total': len(order_names)}
+        # summary['families'] = {'total': len(family_names)}
+        # summary['species'] = {'total': species_count}
 
         # Existing summary data
+        summary['taxon_group_id'] = taxon_group.id
         if taxon_group.logo:
             summary['icon'] = taxon_group.logo.url
         summary['total'] = collections.count()
@@ -141,6 +141,28 @@ class ModuleSummary(APIView):
         summary['total_site_visit'] = collections.distinct('survey').count()
         
         return summary
+
+
+    def get(self, request, *args):
+        response_data = dict()
+         
+        # Add taxon group summaries
+        taxon_groups = TaxonGroup.objects.filter(
+            category=TaxonomicGroupCategory.SPECIES_MODULE.name,
+        ).order_by('display_order')
+        for taxon_group in taxon_groups:
+            taxon_group_name = taxon_group.name
+            response_data[taxon_group_name] = (
+                self.module_summary_data(taxon_group)
+            )
+        return Response(response_data)
+    
+
+
+class GeneralModuleSummary(APIView):
+    """
+    Summary for gGeneral System Module
+    """
 
     def general_summary_data(self):
         """
@@ -191,21 +213,7 @@ class ModuleSummary(APIView):
         return counts
 
     def get(self, request, *args):
-        response_data = dict()
-        
-        # Add general summary
-        response_data['general_summary'] = self.general_summary_data()
-        
-        # Add taxon group summaries
-        taxon_groups = TaxonGroup.objects.filter(
-            category=TaxonomicGroupCategory.SPECIES_MODULE.name,
-        ).order_by('display_order')
-        for taxon_group in taxon_groups:
-            taxon_group_name = taxon_group.name
-            response_data[taxon_group_name] = (
-                self.module_summary_data(taxon_group)
-            )
-        return Response(response_data)
+        return Response(self.general_summary_data())
     
 
 class TaxonGroupOrdersAPIView(APIView):
@@ -355,8 +363,8 @@ class TaxonGroupSpeciesAPIView(APIView):
         # Apply search filter
         if search:
             species_taxonomies = species_taxonomies.filter(
-                models.Q(canonical_name__icontains=search) |
-                models.Q(scientific_name__icontains=search)
+                Q(canonical_name__icontains=search) |
+                Q(scientific_name__icontains=search)
             )
         
         # Get total count before pagination

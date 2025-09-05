@@ -54,7 +54,13 @@ from bims.api_views.send_notification_to_validator import \
 from bims.views.locate import filter_farm_ids_view, get_farm_view
 from bims.api_views.user_boundary import UserBoundaryList
 from bims.api_views.documents import DocumentList
-from bims.api_views.module_summary import ModuleSummary
+from bims.api_views.module_summary import (
+    ModuleSummary, 
+    GeneralModuleSummary, 
+    TaxonGroupOrdersAPIView, 
+    TaxonGroupFamiliesAPIView, 
+    TaxonGroupSpeciesAPIView
+)   
 from bims.api_views.endemism import EndemismList
 from bims.api_views.site_search_result import SiteSearchResult
 from bims.api_views.site_by_coord import SiteByCoord
@@ -199,6 +205,18 @@ urlpatterns = [
     url(r'^module-summary/$',
         ModuleSummary.as_view(),
         name='module-summary'),
+    url(r'^general-module-summary/$',
+        GeneralModuleSummary.as_view(),
+        name='general-module-summary'),
+    url(r'^taxon-group-orders/(?P<taxon_group_id>\d+)/$',
+        TaxonGroupOrdersAPIView.as_view(),
+        name='taxon-group-orders'),
+    url(r'^taxon-group-families/(?P<taxon_group_id>\d+)/$',
+        TaxonGroupFamiliesAPIView.as_view(),
+        name='taxon-group-families'),
+    url(r'^taxon-group-species/(?P<taxon_group_id>\d+)/$',
+        TaxonGroupSpeciesAPIView.as_view(),
+        name='taxon-group-species'),
     url(r'^endemism-list/$',
         EndemismList.as_view(),
         name='endemism-list'),

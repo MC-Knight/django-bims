@@ -1,6 +1,6 @@
 #--------- Generic stuff all our Dockerfiles should start with so we get caching ------------
 FROM python:3.10-slim-bullseye as prod
-MAINTAINER Dimas Ciputra<dimas@kartoza.com>
+MAINTAINER byishimo Teto Joseph<dimas@kartoza.com>
 
 RUN mkdir -p /usr/src/{app,geonode}
 
