@@ -435,7 +435,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 "[data-name='" + layerName + "']");
         },
         renderLegend: function (id, name, url, layer, visibleDefault) {
-            var scr = url + '?request=GetLegendGraphic&format=image/png&width=40&height=40&layer=' + layer;
+            var scr = url + '?service=WMS&request=GetLegendGraphic&format=image/png&width=40&height=40&layer=' + layer;
             if (url.indexOf('.qgs') != -1) {
                 scr = url + '&service=WMS&request=GetLegendGraphic&format=image/png&transparent=true&width=40&height=40&layer=' + layer;
             }
@@ -803,7 +803,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             var abstract_result = "";
             $.ajax({
                 type: 'GET',
-                url: `/bims_proxy/http://${source}/geoserver/${url_provider}/${url_key}/wms?request=getCapabilities`,
+                url: `/bims_proxy/http://${source}/geoserver/${url_provider}/wms?service=WMS&request=getCapabilities`,
                 dataType: `xml`,
                 success: function (response) {
                     let xml_response, parser, xmlDoc;
