@@ -101,9 +101,11 @@ services:
 
   uwsgi:
     <<: *default-common-django
+    container_name: bims_prod_uwsgi
 
   worker:
     <<: *default-common-django
+    container_name: bims_prod_worker
     entrypoint: [ ]
     hostname: worker
     command: celery worker --app=bims.celery:app -Q update -B -l debug
@@ -119,6 +121,7 @@ services:
 
   geocontextworker:
     <<: *default-common-django
+    container_name: bims_prod_geocontextworker
     entrypoint: [ ]
     hostname: worker
     command: celery worker --app=bims.celery:app --schedule /home/geocontext-scheduler/celerybeat-schedule -Q geocontext -B -l debug
@@ -135,6 +138,7 @@ services:
 
   searchworker:
     <<: *default-common-django
+    container_name: bims_prod_searchworker
     entrypoint: [ ]
     hostname: worker
     command: celery worker --app=bims.celery:app -Q search -B -l debug
@@ -150,6 +154,7 @@ services:
 
 
   dbbackups:
+    container_name: bims_prod_dbbackups
     image: kartoza/pg-backup:16-3.4
     hostname: pg-backups
     depends_on:
