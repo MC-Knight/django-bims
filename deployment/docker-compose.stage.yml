@@ -56,13 +56,13 @@ x-common-django:
     - media-data:/home/web/media
     - ./logs:/var/log/
   depends_on:
-    - db:db
-    - geoserver:geoserver
-    - rabbitmq:rabbitmq
-    - cache:cache
-    - worker:worker
-    - searchworker:searchworker
-    - geocontextworker:geocontextworker
+    - db
+    - geoserver
+    - rabbitmq
+    - cache
+    - worker
+    - searchworker
+    - geocontextworker
   restart: unless-stopped
   user: root
 
@@ -108,10 +108,10 @@ services:
     hostname: worker
     command: celery worker --app=bims.celery:app -Q update -B -l debug
     depends_on:
-      - db:db
-      - geoserver:geoserver
-      - rabbitmq:rabbitmq
-      - cache:cache
+      - db
+      - geoserver
+      - rabbitmq
+      - cache
     volumes:
       - static-data:/home/web/static
       - media-data:/home/web/media
@@ -123,10 +123,10 @@ services:
     hostname: worker
     command: celery worker --app=bims.celery:app --schedule /home/geocontext-scheduler/celerybeat-schedule -Q geocontext -B -l debug
     depends_on:
-      - db:db
-      - geoserver:geoserver
-      - rabbitmq:rabbitmq
-      - cache:cache
+      - db
+      - geoserver
+      - rabbitmq
+      - cache
     volumes:
       - static-data:/home/web/static
       - media-data:/home/web/media
@@ -139,10 +139,10 @@ services:
     hostname: worker
     command: celery worker --app=bims.celery:app -Q search -B -l debug
     depends_on:
-      - db:db
-      - geoserver:geoserver
-      - rabbitmq:rabbitmq
-      - cache:cache
+      - db
+      - geoserver
+      - rabbitmq
+      - cache
     volumes:
       - static-data:/home/web/static
       - media-data:/home/web/media
@@ -153,7 +153,7 @@ services:
     image: kartoza/pg-backup:11.5
     hostname: pg-backups
     depends_on:
-      - db:db
+      - db
     environment:
       - DUMPPREFIX=PG_bims
       - PGUSER=${POSTGRES_USER:-docker}
@@ -171,7 +171,7 @@ services:
     image: nginx
     hostname: nginx
     depends_on:
-      - "uwsgi:uwsgi"
+      - uwsgi
     ports:
       - "80:80"
     restart: unless-stopped
@@ -198,7 +198,7 @@ services:
     container_name: bims_prod_gbif_ipt
     image: kartoza/gbif_ipt:latest
     depends_on:
-      - db:db
+      - db
     volumes:
       - ./ipt:/usr/local/ip
     restart: unless-stopped
