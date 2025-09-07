@@ -59,7 +59,11 @@ ADD deployment/docker/uwsgi.conf /uwsgi.conf
 EXPOSE 8080
 
 ADD deployment/docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN apt-get update && apt-get install -y dos2unix \
+    && dos2unix /entrypoint.sh \
+    && chmod +x /entrypoint.sh \
+    && apt-get remove -y dos2unix \
+    && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uwsgi", "--ini", "/uwsgi.conf"]
