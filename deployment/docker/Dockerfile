@@ -30,6 +30,14 @@ RUN echo "Updating apt-get" && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf ~/.cache/pip
 
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libpng-dev \
+    pkg-config \
+    python3-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
 RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
     && pip install --no-cache-dir uwsgi
