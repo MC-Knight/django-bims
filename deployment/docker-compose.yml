@@ -9,6 +9,7 @@
 
 version: '3.7'
 volumes:
+  postgres-data:
   geoserver-datadir:
   rabbitmq:
   static-data:
@@ -24,13 +25,13 @@ x-common-django:
   hostname: uwsgi
   working_dir: /home/web/django_project
   environment:
-    - ADMIN_EMAILS=${ADMIN_EMAILS:-dimas@kartoza.com}
+    - ADMIN_EMAILS=${ADMIN_EMAILS:-tetobobo1@gmail.com}
     - APP_NAME=bims
     - ASYNC_SIGNALS=True
     - BROKER_URL=amqp://rabbitmq:5672
     - C_FORCE_ROOT=1
-    - CONTACT_US_EMAIL=${ADMIN_EMAILS:-dimas@kartoza.com}
-    - ALLOWED_HOSTS=['django-bims.test']
+    - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo1@gmail.com}
+    - ALLOWED_HOSTS=['10.20.60.240',]
     - DATABASE_HOST=db
     - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
     - DATABASE_PASSWORD=${POSTGRES_PASS:-docker}
@@ -38,15 +39,15 @@ x-common-django:
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.prod_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=http://geoserver/geoserver/
+    - GEOSERVER_LOCATION=http://10.20.60.240:5100/geoserver/
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=http://django-bims.test/geoserver/
+    - GEOSERVER_PUBLIC_LOCATION=http://10.20.60.240:5100/geoserver/
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media
     - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     - ROOT_URLCONF=core.urls
-    - SITEURL=http://django-bims.test/
+    - SITEURL=http://10.20.60.240/
     - STATIC_ROOT=/home/web/static/static
     - VIRTUAL_HOST=bims.kartoza.com
     - VIRTUAL_PORT=8080
@@ -68,19 +69,27 @@ x-common-django:
 services:
 
   db:
-    image: dimasciput/postgis:9.6-2.4
+    container_name: bims_prod_db
+    image: kartoza/postgis:11.5-2.5
+    ports:
+      - "5200:5432"
     environment:
       - ALLOW_IP_RANGE=0.0.0.0/0
       - POSTGRES_USER=${POSTGRES_USER:-docker}
       - POSTGRES_PASS=${POSTGRES_PASS:-docker}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
 
   geoserver:
+    container_name: bims_prod_geoserver
     image: kartoza/geoserver:2.19.0
+    ports:
+      - "5100:8080"
     restart: unless-stopped
     environment:
       HTTP_HOST: ${HTTP_HOST:-0.0.0.0}
-      HTTP_PORT: ${GEOSERVER_PORT:-63305}
+      HTTP_PORT: 8080
       GEOSERVER_ADMIN_USER: ${GEOSERVER_USERNAME:-admin}
       GEOSERVER_ADMIN_PASSWORD: ${GEOSERVER_PASSWORD:-admingeoserver}
       DATABASE_URL: postgres://${POSTGRES_USER:-docker}:${POSTGRES_PASS:-docker}@db:5432/${POSTGRES_DBNAME:-gis}
@@ -143,15 +152,6 @@ services:
       - ./media:/home/web/media:rw
       - ./logs:/var/log/
 
-  webpack-watcher:
-    <<: *default-common-django
-    entrypoint: [ ]
-    command: bash -c 'cd /home/web/django_project/bims/; webpack --mode development && webpack --watch --progress'
-    volumes:
-      - ../../django-bims:/home/web/django_project
-      - ./static:/home/web/static:rw
-      - ./media:/home/web/media:rw
-      - ./logs:/var/log/
 
   dbbackups:
     image: kartoza/pg-backup:9.6
@@ -159,11 +159,7 @@ services:
     links:
       - db:db
     environment:
-      # take care to let the project name below match that
-      # declared in the top of the makefile
       - DUMPPREFIX=PG_bims
-      # These are all defaults anyway, but setting explicitly in
-      # case we ever want to ever use different credentials
       - PGUSER=${POSTGRES_USER:-docker}
       - PGPASSWORD=${POSTGRES_PSS:-docker}
       - PGPORT=5432
@@ -173,28 +169,35 @@ services:
 
   # This is normally the main entry point for a production server
   web:
+    container_name: bims_prod_nginx
     image: nginx
     hostname: nginx
     links:
-      - uwsgi:uwsgi"
+      - "uwsgi:uwsgi"
+    ports:
+      - "80:80"
     restart: unless-stopped
     volumes:
+      - ./nginx/sites-enabled/default.conf:/etc/nginx/nginx.conf:ro
       - static-data:/home/web/static
       - media-data:/home/web/media
 
   rabbitmq:
+    container_name: bims_prod_rabbitmq
     image: rabbitmq:3.7-alpine
     volumes:
       - rabbitmq:/var/lib/rabbitmq
     restart: on-failure
 
   cache:
+   container_name: bims_prod_memcached
    image: memcached
    entrypoint:
     - memcached
     - -m 64
 
   gbif_ipt:
+    container_name: bims_prod_gbif_ipt
     image: kartoza/gbif_ipt:latest
     links:
       - db:db
@@ -202,31 +205,6 @@ services:
       - ./ipt:/usr/local/ip
     restart: unless-stopped
 
-  firefox-debug:
-    image: selenium/node-firefox-debug:3.141.59-dubnium
-    volumes:
-      - /dev/shm:/dev/shm
-      - ./scripts:/scripts
-    depends_on:
-      - hub
-    environment:
-      HUB_HOST: hub
-    ports:
-      - 5900:5900
 
-  firefox:
-    image: selenium/node-firefox:3.141.59-dubnium
-    volumes:
-      - /dev/shm:/dev/shm
-      - ./scripts:/scripts
-    depends_on:
-      - hub
-    environment:
-      HUB_HOST: hub
 
-  hub:
-    image: selenium/hub:3.141.59-dubnium
-    volumes:
-      - ./scripts:/scripts
-    ports:
-      - "4444:4444"
+

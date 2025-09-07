@@ -44,14 +44,8 @@
     </div>
 
     {% if user.is_authenticated %}
-    <div id="basicdashboard" class="rbis-occurrence-records">
-        <h1>Biodiversity of Rwanda</h1>
-        {% include 'landing_page_dashboard.html' %}
-        <a href="/map"><i class="fa fa-map-o"></i> &nbsp;Explore Map »</a>
-    </div>
-
+    {% include 'landing_page_dashboard.html' %}
     {% include 'general_system_status.html' %}
-
     {% endif %}
     
 

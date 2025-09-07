@@ -30,9 +30,7 @@ RUN echo "Updating apt-get" && \
     rm -rf ~/.cache/pip
 
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
-ADD REQUIREMENTS-dev.txt /REQUIREMENTS-dev.txt
 RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
-    && pip install --no-cache-dir -r /REQUIREMENTS-dev.txt \
     && pip install --no-cache-dir uwsgi
 
 # Install grunt

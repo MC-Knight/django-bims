@@ -1,6 +1,6 @@
 #--------- Generic stuff all our Dockerfiles should start with so we get caching ------------
 FROM python:3.10-slim-bullseye as prod
-MAINTAINER byishimo Teto Joseph<dimas@kartoza.com>
+MAINTAINER byishimo Teto Joseph<tetobobo1@gmail.com>
 
 RUN mkdir -p /usr/src/{app,geonode}
 
@@ -31,7 +31,8 @@ RUN echo "Updating apt-get" && \
     rm -rf ~/.cache/pip
 
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
-RUN pip install -r /REQUIREMENTS.txt; pip install uwsgi
+RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
+    && pip install --no-cache-dir uwsgi
 
 # Install grunt
 RUN npm --quiet -g install yuglify && npm install -g grunt-cli
@@ -72,9 +73,6 @@ ENV NOTVISIBLE "in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
 
 # End of cut & paste section
-
-ADD deployment/docker/REQUIREMENTS-dev.txt /REQUIREMENTS-dev.txt
-RUN pip install -r /REQUIREMENTS-dev.txt
 ADD bashrc /root/.bashrc
 
 RUN apt-get install -y chromium
