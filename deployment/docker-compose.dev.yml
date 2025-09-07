@@ -45,7 +45,7 @@ x-common-django: &default-common-django
   extra_hosts:
     - "localhost:192.168.1.197"
   volumes:
-    - ../../django-bims:/home/web/django_project
+    - ../django-bims:/home/web/django_project
     - ./static:/home/web/static:rw
     - ./media:/home/web/media:rw
 
@@ -107,7 +107,7 @@ services:
       - cache:cache
       - rabbitmq:rabbitmq
     volumes:
-      - ../../django-bims:/home/web/django_project
+      - ../django-bims:/home/web/django_project
       - ./static:/home/web/static:rw
       - ./media:/home/web/media:rw
       - ./scheduler-data:/home/scheduler-data

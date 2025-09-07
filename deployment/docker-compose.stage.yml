@@ -31,7 +31,7 @@ x-common-django:
     - BROKER_URL=amqp://rabbitmq:5672
     - C_FORCE_ROOT=1
     - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo1@gmail.com}
-    - ALLOWED_HOSTS=['10.20.60.242']
+    - ALLOWED_HOSTS=['10.20.60.240']
     - DATABASE_HOST=db
     - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
     - DATABASE_PASSWORD=${POSTGRES_PASS:-docker}
@@ -39,15 +39,15 @@ x-common-django:
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.prod_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=http://10.20.60.242:5100/geoserver/
+    - GEOSERVER_LOCATION=http://10.20.60.240:5100/geoserver/
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=http://10.20.60.242:5100/geoserver/
+    - GEOSERVER_PUBLIC_LOCATION=http://10.20.60.240:5100/geoserver/
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media
     - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     - ROOT_URLCONF=core.urls
-    - SITEURL=http://10.20.60.242/
+    - SITEURL=http://10.20.60.240/
     - STATIC_ROOT=/home/web/static/static
     - VIRTUAL_HOST=bims.kartoza.com
     - VIRTUAL_PORT=8080
