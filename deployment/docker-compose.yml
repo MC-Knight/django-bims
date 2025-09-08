@@ -67,7 +67,7 @@ services:
 
   db:
     container_name: bims_prod_db
-    image: dimasciput/postgis:9.6-2.4
+    image: kartoza/postgis:11.5-2.5
     ports:
       - "5200:5432"
     environment:
