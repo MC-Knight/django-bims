@@ -39,9 +39,9 @@ x-common-django:
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.prod_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=https://geoserver.rbis.ur.ac.rw/
+    - GEOSERVER_LOCATION=http://41.222.246.28/
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=https://geoserver.rbis.ur.ac.rw/
+    - GEOSERVER_PUBLIC_LOCATION=http://41.222.246.28/
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media
@@ -67,7 +67,7 @@ services:
 
   db:
     container_name: bims_prod_db
-    image: kartoza/postgis:16-3.4
+    image: dimasciput/postgis:9.6-2.4
     ports:
       - "5200:5432"
     environment:
@@ -153,7 +153,7 @@ services:
 
   dbbackups:
     container_name: bims_prod_dbbackups
-    image: kartoza/pg-backup:16-3.4
+    image: kartoza/pg-backup:9.6
     hostname: pg-backups
     depends_on:
       - db
