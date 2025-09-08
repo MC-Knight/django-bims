@@ -39,9 +39,9 @@ x-common-django:
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.prod_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=http://41.222.246.28/
+    - GEOSERVER_LOCATION=http://41.222.246.28/geoserver
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=http://41.222.246.28/
+    - GEOSERVER_PUBLIC_LOCATION=http://41.222.246.28/geoserver
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media

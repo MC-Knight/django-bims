@@ -15,7 +15,7 @@ python manage.py migrate --noinput
 # python manage.py gruntserver
 python manage.py collectstatic --noinput
 python manage.py update_site_domain
-python manage.py add_default_location_site_view
+python manage.py add_default_location_site_view --replace True
 python manage.py add_location_site_view_geoserver
 popd
 

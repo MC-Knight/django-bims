@@ -71,7 +71,7 @@ class Command(BaseCommand):
         if replace_view:
             try:
                 cursor.execute(
-                    '''DROP MATERIALIZED VIEW {};'''.format(
+                    '''DROP MATERIALIZED VIEW IF EXISTS {};'''.format(
                         view_name))
             except: # noqa
                 pass
