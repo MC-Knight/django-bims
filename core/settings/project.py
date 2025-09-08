@@ -11,55 +11,45 @@ from django.utils.translation import ugettext_lazy as _
 from .contrib import *  # noqa
 
 # Project apps
-INSTALLED_APPS += (
-    'bims',
-    'td_biblio',
-    'scripts',
-    'bims_theme',
-    'mobile'
-)
+INSTALLED_APPS += ("bims", "td_biblio", "scripts", "bims_theme", "mobile")
 
 # Set languages which want to be translated
-LANGUAGES = (
-    ('en', _('English')),
-)
+LANGUAGES = (("en", _("English")),)
 
 VALID_DOMAIN = [
-    '0.0.0.0',
+    "0.0.0.0",
 ]
 
 PIPELINE = {
-    'STYLESHEETS': {
-        'healthyriver-base': {
-            'source_filenames': {
-                'js/libs/bootstrap-4.0.0/css/bootstrap.min.css',
-                'js/libs/font-awesome/css/font-awesome.min.css',
-                'js/libs/magnific-popup/magnific-popup.css',
-                'js/libs/openlayers-4.6.4/ol.css',
-                'js/libs/jquery-ui-1.12.1/jquery-ui.min.css',
-                'css/base.css',
+    "STYLESHEETS": {
+        "healthyriver-base": {
+            "source_filenames": {
+                "js/libs/bootstrap-4.0.0/css/bootstrap.min.css",
+                "js/libs/font-awesome/css/font-awesome.min.css",
+                "js/libs/magnific-popup/magnific-popup.css",
+                "js/libs/openlayers-4.6.4/ol.css",
+                "js/libs/jquery-ui-1.12.1/jquery-ui.min.css",
+                "css/base.css",
             },
-            'output_filename': 'css/healthyriver-base.css',
-            'extra_content': {
-                'media': 'screen, projection',
-            }
+            "output_filename": "css/healthyriver-base.css",
+            "extra_content": {
+                "media": "screen, projection",
+            },
         }
     },
-    'JAVASCRIPT': {
-
-    }
+    "JAVASCRIPT": {},
 }
 
-REQUIRE_JS_PATH = '/static/js/libs/requirejs-2.3.5/require.js'
+REQUIRE_JS_PATH = "/static/js/libs/requirejs-2.3.5/require.js"
 
-GRUNT_MODULES = {
-    'map_view': {
-        'main': 'js/app',
-        'optimized': 'js/optimized.js',
-    }
-}
+# GRUNT_MODULES = {
+#     'map_view': {
+#         'main': 'js/app',
+#         'optimized': 'js/optimized.js',
+#     }
+# }
 
-TEMP_FOLDER = MEDIA_ROOT + '/temp'
+TEMP_FOLDER = MEDIA_ROOT + "/temp"
 
 # Saving geometry of country in focused countries
 FOCUSED_COUNTRIES = ["South Africa"]
@@ -72,37 +62,37 @@ USE_GEOMETRY_BOUNDARY = False
 
 # TODO(IS) Update unit test to be independent with this setting.
 # Farm ID GeoServer Layer
-FARM_GEOSERVER_URL = 'http://maps.kartoza.com/geoserver/kartoza/ows'
-FARM_WORKSPACE = 'kartoza'
-FARM_LAYER_NAME = 'farm_portion'
-FARM_ID_COLUMN = 'id'
+FARM_GEOSERVER_URL = "http://maps.kartoza.com/geoserver/kartoza/ows"
+FARM_WORKSPACE = "kartoza"
+FARM_LAYER_NAME = "farm_portion"
+FARM_ID_COLUMN = "id"
 
 PROXY_ALLOWED_HOSTS = (
-    '.kartoza.com',
-    '.openstreetmap.org.za',
-    '.uni-heidelberg.de',
-    '.openstreetmap.org',
-    '.tilehosting.com',
-    '.maptiler.com',
-    '.openrouteservice.org',
-    '.award.org.za',
-    '.fastly.net'
+    ".kartoza.com",
+    ".openstreetmap.org.za",
+    ".uni-heidelberg.de",
+    ".openstreetmap.org",
+    ".tilehosting.com",
+    ".maptiler.com",
+    ".openrouteservice.org",
+    ".award.org.za",
+    ".fastly.net",
 )
 
-PROXY_ALLOWED_HOSTS_ENV = os.environ.get('PROXY_ALLOWED_HOSTS', None)
+PROXY_ALLOWED_HOSTS_ENV = os.environ.get("PROXY_ALLOWED_HOSTS", None)
 
 if PROXY_ALLOWED_HOSTS_ENV:
-    proxy_list = PROXY_ALLOWED_HOSTS_ENV.split(',')
+    proxy_list = PROXY_ALLOWED_HOSTS_ENV.split(",")
     for proxy in proxy_list:
         PROXY_ALLOWED_HOSTS += (proxy,)
 
 
-PROCESSED_CSV_PATH = 'processed_csv'
-SESSION_COOKIE_DOMAIN = os.environ.get('SESSION_COOKIE_DOMAIN', None)
+PROCESSED_CSV_PATH = "processed_csv"
+SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN", None)
 
 WEBPACK_LOADER = {
-    'DEFAULT': {
-        'BUNDLE_DIR_NAME': 'bims/bundles/',
-        'STATS_FILE': absolute_path('bims', 'webpack-stats.json'),
+    "DEFAULT": {
+        "BUNDLE_DIR_NAME": "bims/bundles/",
+        "STATS_FILE": absolute_path("bims", "webpack-stats.json"),
     }
 }
