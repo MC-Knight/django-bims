@@ -33,12 +33,6 @@ ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
 RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
     && pip install --no-cache-dir uwsgi
 
-# Install grunt
-RUN npm --quiet -g install yuglify && npm install -g grunt-cli
-ADD deployment/docker/package.json /package.json
-ADD deployment/docker/Gruntfile.js /Gruntfile.js
-RUN cd / && npm install
-
 #USER www-data
 ADD . /home/web/django_project
 WORKDIR /home/web/django_project
