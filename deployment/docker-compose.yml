@@ -39,9 +39,9 @@ x-common-django:
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.prod_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=http://localhost:5100/geoserver
+    - GEOSERVER_LOCATION=http://geoserver:8080/geoserver
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=http://localhost:5100/geoserver
+    - GEOSERVER_PUBLIC_LOCATION=http://geoserver:8080/geoserver
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media
@@ -95,6 +95,10 @@ services:
       - db
     volumes:
       - geoserver-datadir:/opt/geoserver/data_dir/
+    networks:
+      default:
+        aliases:
+          - geoserver
 
   uwsgi:
     <<: *default-common-django
