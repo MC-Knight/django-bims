@@ -116,7 +116,7 @@ define([
 
             this.render();
             this.clusterBiologicalCollection = new ClusterBiologicalCollection(this);
-            this.mapControlPanel.searchView.initDateFilter();
+            // this.mapControlPanel.searchView.initDateFilter();
             this.showInfoPopup();
 
             this.pointVectorSource = new ol.source.Vector({});
@@ -489,6 +489,8 @@ define([
 
             this.$el.append(this.mapControlPanel.render().$el);
             this.$el.append(this.sidePanelView.render().$el);
+
+            this.mapControlPanel.searchView.initDateFilter();
 
             // add layer switcher
             var layerSwitcher = new LayerSwitcher();

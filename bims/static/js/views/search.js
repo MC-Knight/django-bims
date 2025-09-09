@@ -658,7 +658,14 @@ define([
             if (this.startYear === this.endYear) {
                 this.startYear -= 1;
             }
-            this.yearSlider = NoUiSlider.create($('#year-slider')[0], {
+            
+            // Add safety check for existing slider
+            const sliderElement = $('#year-slider')[0];
+            if (sliderElement && sliderElement.noUiSlider) {
+                sliderElement.noUiSlider.destroy();
+            }
+            
+            this.yearSlider = NoUiSlider.create(sliderElement, {
                 start: [this.startYear, this.endYear],
                 connect: true,
                 range: {
