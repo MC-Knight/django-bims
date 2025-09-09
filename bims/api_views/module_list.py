@@ -15,11 +15,9 @@ class ModuleList(APIView):
                     category=TaxonomicGroupCategory.SPECIES_MODULE.name
                 )
         for _module in taxon_groups:
-            try:
-                logo = get_thumbnail(
-                    _module.logo, 'x40', crop='center'
-                ).name
-            except ValueError:
+            if _module.logo:
+                logo = request.build_absolute_uri(_module.logo.url)
+            else:
                 logo = ''
             taxon_group_list.append({
                 'name': _module.name,

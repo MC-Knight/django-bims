@@ -20,6 +20,12 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
         administrativeOrder: 0,
         layerSelector: null,
         administrativeLayersName: ["Administrative Provinces", "Administrative Municipals", "Administrative Districts"],
+        
+        // NEW: Lazy loading flags
+        geonodeLayersLoaded: false,
+        legendsRendered: {},
+        layersAddedToMap: {},
+        
         initialize: function () {
             this.layerStyle = new LayerStyle();
             Shared.Dispatcher.on('layers:showFeatureInfo', this.showFeatureInfo, this);
@@ -29,9 +35,11 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 this.administrativeTransparency = administrativeVisibility;
             }
         },
+        
         isBiodiversityLayerLoaded: function () {
             return true;
         },
+        
         isAdministrativeLayerSelected: function () {
             var $checkbox = $('.layer-selector-input[value="Administrative"]');
             if ($checkbox.length === 0) {
@@ -39,6 +47,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             }
             return $checkbox.is(':checked');
         },
+        
         initLayer: function (layer, layerName, visibleInDefault, category, source) {
             layer.set('added', false);
             var layerType = layerName;
@@ -80,10 +89,24 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 'category': layerCategory,
                 'source': layerSource
             };
-            if (!visibleInDefault) {
+            
+            // NEW: Only add to map and set visibility if it should be visible by default
+            if (visibleInDefault) {
+                this.addLayerToMapIfNeeded(layerType);
+            } else {
                 layer.setVisible(false);
             }
         },
+        
+        // NEW: Lazy layer addition to map
+        addLayerToMapIfNeeded: function (layerName) {
+            if (!this.layersAddedToMap[layerName] && this.layers[layerName]) {
+                this.layers[layerName]['layer'].set('added', true);
+                this.map.addLayer(this.layers[layerName]['layer']);
+                this.layersAddedToMap[layerName] = true;
+            }
+        },
+        
         addBiodiveristyLayersToMap: function (map) {
             var self = this;
             // ---------------------------------
@@ -140,6 +163,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 self.initialLoadBiodiversityLayersToMap = true;
             }
         },
+        
         addAdministrativeLayerToMap: function (data) {
             let self = this;
             let currentIndex = 0;
@@ -181,6 +205,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 _isAdministrativeSelected
             );
         },
+        
         addLayersToMap: function (map) {
             var self = this;
             this.map = map;
@@ -256,13 +281,17 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                             }),
                             value.name, defaultVisibility, '', wmsUrl
                         );
-                        self.renderLegend(
-                            value.wms_layer_name,
-                            value.name,
-                            options['url'],
-                            options['params']['layers'],
-                            false
-                        );
+                        
+                        // NEW: Only render legend if layer is visible by default
+                        if (defaultVisibility) {
+                            self.renderLegendIfNeeded(
+                                value.wms_layer_name,
+                                value.name,
+                                options['url'],
+                                options['params']['layers'],
+                                true
+                            );
+                        }
                     });
 
                     // let administrativeOrder = self.administrativeOrder + 1;
@@ -276,15 +305,24 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                         self.showLayerSource(e.target.attributes["value"].value);
                     });
 
-                    self.addGeonodeLayersToMap(map);
+                    // NEW: Don't automatically load Geonode layers
+                    // self.addGeonodeLayersToMap(map);
 
                 },
                 error: function (err) {
                     self.addBiodiveristyLayersToMap(map);
                 }
             });
-
         },
+        
+        // NEW: Load Geonode layers on demand
+        loadGeonodeLayersOnDemand: function () {
+            if (!this.geonodeLayersLoaded) {
+                this.addGeonodeLayersToMap(this.map);
+                this.geonodeLayersLoaded = true;
+            }
+        },
+        
         addGeonodeLayersToMap: function (map) {
             // Adding layer from GeoNode, filtering is done by the API
             var default_wms_url = ogcServerDefaultLocation + 'wms';
@@ -331,19 +369,21 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                             value.title, false, category, 'GeoNode'
                         );
 
-                        self.renderLegend(
-                            value.typename,
-                            value.title,
-                            options['url'],
-                            options['params']['layers'],
-                            false
-                        );
+                        // NEW: Don't render legend automatically
+                        // self.renderLegend(
+                        //     value.typename,
+                        //     value.title,
+                        //     options['url'],
+                        //     options['params']['layers'],
+                        //     false
+                        // );
                     });
                     self.renderLayers(false);
                     self.refreshLayerOrders();
                 }
             })
         },
+        
         changeLayerAdministrative: function (administrative) {
             var self = this;
             var administrativeVisibility = Shared.StorageUtil.getItemDict('Administrative', 'selected');
@@ -362,24 +402,72 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             }
             // this.changeLayerTransparency(this.administrativeKeyword, this.administrativeTransparency);
         },
+        
+        // MODIFIED: Add layer to map when making visible
         changeLayerVisibility: function (layerName, visible) {
             if (Object.keys(this.layers).length === 0) {
                 return false;
             }
+            
+            // NEW: Add layer to map if not already added and making visible
+            if (visible) {
+                this.addLayerToMapIfNeeded(layerName);
+            }
+            
             this.layers[layerName]['layer'].setVisible(visible);
         },
+        
         changeLayerTransparency: function (layername, opacity) {
             if (Object.keys(this.layers).length === 0) {
                 return false;
             }
             this.layers[layername]['layer'].setOpacity(opacity);
         },
+        
+        // MODIFIED: Render legend on demand
         selectorChanged: function (layerName, selected) {
             Shared.StorageUtil.setItemDict(layerName, 'selected', selected);
             this.changeLayerVisibility(layerName, selected);
+            
+            // NEW: Render legend only when turning layer on
+            if (selected) {
+                this.renderLegendIfNeeded(layerName);
+                
+                // NEW: Load Geonode layers if user is exploring layers
+                if (!this.geonodeLayersLoaded) {
+                    this.loadGeonodeLayersOnDemand();
+                }
+            }
+            
             var needToReloadXHR = true;
             this.toggleLegend(layerName, selected, needToReloadXHR);
         },
+        
+        // NEW: Render legend only if not already rendered
+        renderLegendIfNeeded: function (layerName, displayName, url, layerParam, visibleDefault) {
+            if (this.legendsRendered[layerName]) {
+                return; // Already rendered
+            }
+            
+            // Find layer data if not provided
+            if (!displayName && this.layers[layerName]) {
+                var layer = this.layers[layerName];
+                displayName = layer.layerName;
+                var source = layer.layer.getSource();
+                if (source && source.getUrls) {
+                    url = source.getUrls()[0];
+                }
+                if (source && source.getParams) {
+                    layerParam = source.getParams().layers;
+                }
+            }
+            
+            if (displayName && url && layerParam) {
+                this.renderLegend(layerName, displayName, url, layerParam, visibleDefault || false);
+                this.legendsRendered[layerName] = true;
+            }
+        },
+        
         toggleLegend: function (layerName, selected, reloadXHR) {
             // show/hide legend
             var $legendElement = this.getLegendElement(layerName);
@@ -406,6 +494,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 $legendElement.hide();
             }
         },
+        
         ol3_checkLayer: function (layer) {
             var res = false;
             for (var i = 0; i < this.map.getLayers().getLength(); i++) {
@@ -417,6 +506,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             }
             return res;
         },
+        
         moveLayerToTop: function (layer) {
             if (layer) {
                 if (this.ol3_checkLayer(layer)) {
@@ -427,13 +517,16 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 }
             }
         },
+        
         moveLegendToTop: function (layerName) {
             this.getLegendElement(layerName).detach().prependTo('#map-legend');
         },
+        
         getLegendElement: function (layerName) {
             return $(".control-drop-shadow").find(
                 "[data-name='" + layerName + "']");
         },
+        
         renderLegend: function (id, name, url, layer, visibleDefault) {
             // Check if legend already exists
             if ($('#map-legend').find('[data-name="' + id + '"]').length > 0) {
@@ -454,6 +547,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 '<img src="' + scr + '"></div>';
             $('#map-legend').prepend(html);
         },
+        
         renderLayersSelector: function (key, name, visibleInDefault, transparencyDefault, category, source, isFirstTime) {
             if ($('.layer-selector-input[value="' + key + '"]').length > 0) {
                 return
@@ -504,6 +598,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             var needToReloadXHR = false;
             self.toggleLegend(key, visibleInDefault, needToReloadXHR);
         },
+        
         renderTransparencySlider: function () {
             var self = this;
             var layerDivs = $('#layers-selector').find('.layer-transparency');
@@ -535,6 +630,8 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 });
             });
         },
+        
+        // MODIFIED: Don't add all layers to map immediately
         renderLayers: function (isFirstTime) {
             let self = this;
             let savedOrders = $.extend({}, self.orders);
@@ -600,14 +697,16 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 self.renderLayersSelector(key, layerName, defaultVisibility, currentLayerTransparency, category, source, isFirstTime);
             });
 
-            // RENDER LAYERS
+            // NEW: Only add visible layers to map
             $.each(reversedOrders, function (key, value) {
                 let _layer = self.layers[value]['layer'];
-                if (!_layer.get('added')) {
+                if (self.layers[value]['visibleInDefault'] && !_layer.get('added')) {
                     _layer.set('added', true);
                     self.map.addLayer(_layer);
+                    self.layersAddedToMap[value] = true;
                 }
             });
+            
             self.renderTransparencySlider();
 
             $('.layer-selector-input').change(function (e) {
@@ -618,6 +717,8 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 self.refreshLayerOrders();
             }
         },
+        
+        // OPTIMIZED: Only query visible layers
         showFeatureInfo: function (lon, lat, siteExist = false) {
             // Show feature info from lon and lat
             // Lon and lat coordinates are in EPSG:3857 format
@@ -652,64 +753,75 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             Shared.GetFeatureRequested = true;
             Shared.Dispatcher.trigger('map:showPopup', coordinate,
                 '<div class="info-popup popup-loading"> Fetching... </div>');
+                
+            // NEW: Pre-filter visible layers to reduce requests
+            let visibleLayers = [];
             $.each(this.layers, function (layer_key, layer) {
+                if (layer['layer'].getVisible()) {
+                    visibleLayers.push({key: layer_key, layer: layer});
+                }
+            });
+            
+            $.each(visibleLayers, function (index, layerData) {
+                let layer_key = layerData.key;
+                let layer = layerData.layer;
+                
                 if (coordinate !== lastCoordinate) {
                     return;
                 }
-                if (layer['layer'].getVisible()) {
-                    try {
-                        const queryLayer = layer['layer'].getSource().getParams()['layers'];
-                        if (queryLayer.indexOf('location_site_view') > -1) {
-                            return true;
-                        }
-                        const getFeatureFormat = layer['layer'].getSource().getParams()['getFeatureFormat'];
-                        const layerName = layer['layer'].getSource().getParams()['name'];
-                        let layerSource = layer['layer'].getSource().getGetFeatureInfoUrl(
-                            coordinate,
-                            view.getResolution(),
-                            view.getProjection(),
-                            {'INFO_FORMAT': getFeatureFormat}
-                        );
-                        layerSource += '&QUERY_LAYERS=' + queryLayer;
-                        Shared.GetFeatureXHRRequest.push($.ajax({
-                            type: 'POST',
-                            url: '/get_feature/',
-                            data: {
-                                'layerSource': layerSource
-                            },
-                            success: function (data) {
-                                // process properties
-                                if (coordinate !== lastCoordinate || !data) {
-                                    return;
-                                }
-                                let linesData = data.split("\n");
-                                let properties = {};
-
-                                // reformat plain text to be dictionary
-                                // because qgis can't support info format json
-                                $.each(linesData, function (index, string) {
-                                    var couple = string.split(' = ');
-                                    if (couple.length !== 2) {
-                                        return true;
-                                    } else {
-                                        if (couple[0] === 'geom') {
-                                            return true;
-                                        }
-                                        properties[couple[0]] = couple[1];
-                                    }
-                                });
-                                if ($.isEmptyObject(properties)) {
-                                    return;
-                                }
-                                featuresInfo[layer_key] = {
-                                    'layerName': layer['layerName'],
-                                    'properties': properties
-                                };
-                            },
-                        }));
-                    } catch (err) {
-
+                
+                try {
+                    const queryLayer = layer['layer'].getSource().getParams()['layers'];
+                    if (queryLayer.indexOf('location_site_view') > -1) {
+                        return true;
                     }
+                    const getFeatureFormat = layer['layer'].getSource().getParams()['getFeatureFormat'];
+                    const layerName = layer['layer'].getSource().getParams()['name'];
+                    let layerSource = layer['layer'].getSource().getGetFeatureInfoUrl(
+                        coordinate,
+                        view.getResolution(),
+                        view.getProjection(),
+                        {'INFO_FORMAT': getFeatureFormat}
+                    );
+                    layerSource += '&QUERY_LAYERS=' + queryLayer;
+                    Shared.GetFeatureXHRRequest.push($.ajax({
+                        type: 'POST',
+                        url: '/get_feature/',
+                        data: {
+                            'layerSource': layerSource
+                        },
+                        success: function (data) {
+                            // process properties
+                            if (coordinate !== lastCoordinate || !data) {
+                                return;
+                            }
+                            let linesData = data.split("\n");
+                            let properties = {};
+
+                            // reformat plain text to be dictionary
+                            // because qgis can't support info format json
+                            $.each(linesData, function (index, string) {
+                                var couple = string.split(' = ');
+                                if (couple.length !== 2) {
+                                    return true;
+                                } else {
+                                    if (couple[0] === 'geom') {
+                                        return true;
+                                    }
+                                    properties[couple[0]] = couple[1];
+                                }
+                            });
+                            if ($.isEmptyObject(properties)) {
+                                return;
+                            }
+                            featuresInfo[layer_key] = {
+                                'layerName': layer['layerName'],
+                                'properties': properties
+                            };
+                        },
+                    }));
+                } catch (err) {
+
                 }
             });
             Promise.all(Shared.GetFeatureXHRRequest).then(() => {
@@ -727,6 +839,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 }
             });
         },
+        
         renderFeaturesInfo: function (featuresInfo, coordinate) {
             var that = this;
             let tabs = '<ul class="nav nav-tabs">';
@@ -778,6 +891,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             }
             infoWrapperTab[0].click();
         },
+        
         showLayerSource: function (layerKey) {
             if (Object.keys(this.layers).length === 0) {
                 return false;
@@ -785,6 +899,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 this.getLayerAbstract(layerKey);
             }
         },
+        
         getLayerAbstract: function (layerKey) {
             let layerProvider = '';
             let layerName = '';
@@ -843,6 +958,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 }
             })
         },
+        
         initializeLayerSelector: function () {
             let self = this;
             this.layerSelector = $('#layers-selector');
@@ -864,6 +980,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 });
             });
         },
+        
         changeLayerOder: function (layerName, order) {
             let $layerElm = $('.layer-selector-input[value="' + layerName + '"]').parent().parent();
             let $layerSelectorList = $('#layers-selector li');
@@ -876,6 +993,7 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 $layerElm.insertAfter($layerSelectorList.get(order - 1));
             }
         },
+        
         refreshLayerOrders: function () {
             let self = this;
             let $layerSelectorInput = $('.layer-selector-input');

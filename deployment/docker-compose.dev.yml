@@ -75,6 +75,8 @@ services:
   geoserver:
     container_name: bims_dev_geoserver
     image: kartoza/geoserver:2.19.0
+    ports:
+      - "63305:8080"
     restart: unless-stopped
     environment:
       HTTP_HOST: ${HTTP_HOST:-0.0.0.0}
@@ -86,10 +88,10 @@ services:
       - db
     volumes:
       - geoserver-datadir:/opt/geoserver/data_dir/
-    links:
-      - db
-    ports:
-      - "63305:8080"
+    networks:
+      default:
+        aliases:
+          - geoserver
 
   rabbitmq:
     container_name: bims_dev_rabbitmq
@@ -102,10 +104,10 @@ services:
     <<: *default-common-django
     container_name: bims_dev_worker
     hostname: worker
-    links:
-      - db:db
-      - cache:cache
-      - rabbitmq:rabbitmq
+    depends_on:
+      - db
+      - cache
+      - rabbitmq
     volumes:
       - ../django-bims:/home/web/django_project
       - ./static:/home/web/static:rw
