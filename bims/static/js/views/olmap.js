@@ -169,7 +169,9 @@ define([
             this.pointVectorSource.addFeature(circleFeature);
         },
         clearPoint: function () {
-            this.pointVectorSource.clear();
+            if (this.pointVectorSource) {
+                this.pointVectorSource.clear();
+            }
         },
         zoomToExtent: function (coordinates, shouldTransform=true, updateZoom=true) {
             if (this.isBoundaryEnabled) {

@@ -13,6 +13,7 @@ pushd /home/web/django_project
 python manage.py migrate sites --noinput
 python manage.py migrate --noinput
 # python manage.py gruntserver
+npm install -g yuglify
 python manage.py collectstatic --noinput --clear
 python manage.py update_site_domain
 python manage.py add_default_location_site_view --replace True
