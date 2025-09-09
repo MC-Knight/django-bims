@@ -44,7 +44,7 @@ REQUIRE_JS_PATH = "/static/js/libs/requirejs-2.3.5/require.js"
 
 GRUNT_MODULES = {
     'map_view': {
-        'main': 'js/app',
+        'main': 'js/app.js',   
         'optimized': 'js/optimized.js',
     }
 }
