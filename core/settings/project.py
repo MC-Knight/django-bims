@@ -42,12 +42,12 @@ PIPELINE = {
 
 REQUIRE_JS_PATH = "/static/js/libs/requirejs-2.3.5/require.js"
 
-# GRUNT_MODULES = {
-#     'map_view': {
-#         'main': 'js/app',
-#         'optimized': 'js/optimized.js',
-#     }
-# }
+GRUNT_MODULES = {
+    'map_view': {
+        'main': 'js/app',
+        'optimized': 'js/optimized.js',
+    }
+}
 
 TEMP_FOLDER = MEDIA_ROOT + "/temp"
 
