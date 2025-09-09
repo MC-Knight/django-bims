@@ -31,7 +31,7 @@ x-common-django:
     - BROKER_URL=amqp://rabbitmq:5672
     - C_FORCE_ROOT=1
     - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo1@gmail.com}
-    - ALLOWED_HOSTS=['41.222.246.28','rbis.ur.ac.rw','geoserver.rbis.ur.ac.rw','localhost']
+    - ALLOWED_HOSTS=['*']
     - DATABASE_HOST=db
     - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
     - DATABASE_PASSWORD=${POSTGRES_PASS:-docker}

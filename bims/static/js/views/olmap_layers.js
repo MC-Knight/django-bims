@@ -435,6 +435,11 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 "[data-name='" + layerName + "']");
         },
         renderLegend: function (id, name, url, layer, visibleDefault) {
+            // Check if legend already exists
+            if ($('#map-legend').find('[data-name="' + id + '"]').length > 0) {
+                return; // Legend already exists, don't add duplicate
+            }
+            
             var scr = url + '?service=WMS&request=GetLegendGraphic&format=image/png&width=40&height=40&layer=' + layer;
             if (url.indexOf('.qgs') != -1) {
                 scr = url + '&service=WMS&request=GetLegendGraphic&format=image/png&transparent=true&width=40&height=40&layer=' + layer;
@@ -621,7 +626,8 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
             lat = parseFloat(lat);
             const coordinate = ol.proj.transform([lon, lat], 'EPSG:4326', 'EPSG:3857');
 
-            if (Shared.GetFeatureRequested) {
+            // If popup is already open and visible, close it
+            if (Shared.GetFeatureRequested && $('.info-popup:visible').length > 0) {
                 Shared.GetFeatureRequested = false;
                 Shared.Dispatcher.trigger('map:hidePopup');
                 if (Shared.GetFeatureXHRRequest.length > 0) {
@@ -632,6 +638,12 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 }
                 return;
             }
+            
+            // If already requesting, ignore additional clicks
+            if (Shared.GetFeatureRequested) {
+                return;
+            }
+
             const that = this;
             const view = this.map.getView();
             let lastCoordinate = coordinate;
