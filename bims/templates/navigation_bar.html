@@ -26,7 +26,7 @@
             </li>
             {% endif %}
             <li>
-                <a class="nav-link" href="{{ domain_name }}/map">Resources</a>
+                <a id="resource-toggle" class="nav-link" href="{{ domain_name }}/map">Resources</a>
             </li>
             <li>
                 <a class="nav-link" href="{{ domain_name }}#citation">Citation</a>
@@ -146,6 +146,15 @@
             </li>
         </ul>
     </div>
+    
+    <div class="resources-navbar">
+        <div class="resources-links">
+            <a href="/">Threats to biodiversity in Rwanda</a>
+            <a href="/">Data Product</a>
+            <a href="/">International Commitments</a>
+            <a href="/">Biodiverisity of Sepcial Conservation Concern</a>
+        </div>
+    </div> 
 </nav>
 
 
@@ -180,5 +189,25 @@ $(document).ready(function(){
         }, 300); // Wait for transition to complete
         $(document.body).css("overflow-y", "auto");
     });
+
+    $(document).on('click', '#resource-toggle', function(event){
+        event.preventDefault();
+        $(".resources-navbar").css("display", "flex");
+        setTimeout(function(){
+            $(".resources-navbar").css("top", "50px");
+        }, 10);
+        $("#resource-toggle").attr("id", "resource-toggle-off");
+    });
+
+    $(document).on('click', '#resource-toggle-off', function(event){
+        event.preventDefault();
+        $(".resources-navbar").css("top", "0");
+        setTimeout(function(){
+            $(".resources-navbar").css("display", "none");
+        }, 300);
+        $("#resource-toggle-off").attr("id", "resource-toggle");
+    });
+
+
 });
 </script>
