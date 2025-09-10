@@ -60,9 +60,7 @@ class LocationSiteOverviewData(object):
         for group in groups:
             group_data = dict()
             try:
-                group_data[self.GROUP_ICON] = get_thumbnail(
-                    group.logo, 'x50', crop='center'
-                ).name
+                group_data[self.GROUP_ICON] = self.request.build_absolute_uri(group.logo.url)        
             except ValueError:
                 pass
             group_data[self.MODULE] = group.id

@@ -10,6 +10,7 @@ x-common-django: &default-common-django
   hostname: dev
   command: ""
   entrypoint: []
+  working_dir: /home/web/django_project
   environment:
     - ADMIN_EMAILS=${ADMIN_EMAILS:-dimas@kartoza.com}
     - APP_NAME=bims
@@ -26,9 +27,9 @@ x-common-django: &default-common-django
     - DATABASE_USERNAME=${POSTGRES_USER:-docker}
     - DJANGO_SETTINGS_MODULE=core.settings.dev_docker
     - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
-    - GEOSERVER_LOCATION=http://geoserver/geoserver/
+    - GEOSERVER_LOCATION=http://geoserver:8080/geoserver
     - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
-    - GEOSERVER_PUBLIC_LOCATION=http://192.168.50.135:63305/geoserver/
+    - GEOSERVER_PUBLIC_LOCATION=http://geoserver:8080/geoserver
     - GEOSERVER_ADMIN_USER=${GEOSERVER_USERNAME:-admin}
     - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_PASSWORD:-admingeoserver}
     - MEDIA_ROOT=/home/web/media
@@ -45,7 +46,7 @@ x-common-django: &default-common-django
   extra_hosts:
     - "localhost:192.168.1.197"
   volumes:
-    - ../django-bims:/home/web/django_project
+    - ../:/home/web/django_project
     - ./static:/home/web/static:rw
     - ./media:/home/web/media:rw
 
@@ -109,7 +110,7 @@ services:
       - cache
       - rabbitmq
     volumes:
-      - ../django-bims:/home/web/django_project
+      - ../:/home/web/django_project
       - ./static:/home/web/static:rw
       - ./media:/home/web/media:rw
       - ./scheduler-data:/home/scheduler-data

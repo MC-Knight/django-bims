@@ -1,99 +1,147 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<StyledLayerDescriptor version="1.0.0"
-                       xsi:schemaLocation="http://www.opengis.net/sld http://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd"
-                       xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"
-                       xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
-  <NamedLayer>
-    <Name>location_site</Name>
-    <UserStyle>
-      <Title>Sites</Title>
-      <FeatureTypeStyle>
-        <Rule>
-          <Title>Sites</Title>
-          <MinScaleDenominator>1000000</MinScaleDenominator>
-          <PointSymbolizer>
-            <Graphic>
-              <Mark>
-                <WellKnownName>circle</WellKnownName>
-                <Fill>
-                  <CssParameter name="fill">#D7CD47</CssParameter>
-                </Fill>
-                <Stroke>
-                  <CssParameter name="stroke">#D7CD47</CssParameter>
-                  <CssParameter name="stroke-width">1</CssParameter>
-                  <CssParameter name="stroke-opacity">1.0</CssParameter>
-                </Stroke>
-              </Mark>
-              <Size>5</Size>
-            </Graphic>
-          </PointSymbolizer>
-        </Rule>
-        <Rule>
-          <Title>Sites medium</Title>
-          <MinScaleDenominator>100000</MinScaleDenominator>
-          <MaxScaleDenominator>1000000</MaxScaleDenominator>
-          <PointSymbolizer>
-            <Graphic>
-              <Mark>
-                <WellKnownName>circle</WellKnownName>
-                <Fill>
-                  <CssParameter name="fill">#D7CD47</CssParameter>
-                </Fill>
-                <Stroke>
-                  <CssParameter name="stroke">#3f3b0e</CssParameter>
-                  <CssParameter name="stroke-width">1</CssParameter>
-                  <CssParameter name="stroke-opacity">1</CssParameter>
-                </Stroke>
-              </Mark>
-              <Size>10</Size>
-            </Graphic>
-          </PointSymbolizer>
-        </Rule>
-        <Rule>
-          <Title>Sites large</Title>
-          <MinScaleDenominator>10000</MinScaleDenominator>
-          <MaxScaleDenominator>100000</MaxScaleDenominator>
-          <PointSymbolizer>
-            <Graphic>
-              <Mark>
-                <WellKnownName>circle</WellKnownName>
-                <Fill>
-                  <CssParameter name="fill">#D7CD47</CssParameter>
-                </Fill>
-                <Stroke>
-                  <CssParameter name="stroke">#3f3b0e</CssParameter>
-                  <CssParameter name="stroke-width">2</CssParameter>
-                  <CssParameter name="stroke-opacity">1.0</CssParameter>
-                </Stroke>
-              </Mark>
-              <Size>15</Size>
-            </Graphic>
-          </PointSymbolizer>
-        </Rule>
-        <Rule>
-          <Title>Sites huge</Title>
-          <MinScaleDenominator>1</MinScaleDenominator>
-          <MaxScaleDenominator>10000</MaxScaleDenominator>
-          <PointSymbolizer>
-            <Graphic>
-              <Mark>
-                <WellKnownName>circle</WellKnownName>
-                <Fill>
-                  <CssParameter name="fill">#D7CD47</CssParameter>
-                </Fill>
-                <Stroke>
-                  <CssParameter name="stroke">#3f3b0e</CssParameter>
-                  <CssParameter name="stroke-width">4</CssParameter>
-                  <CssParameter name="stroke-opacity">1.0</CssParameter>
-                </Stroke>
-              </Mark>
-              <Size>20</Size>
-            </Graphic>
-          </PointSymbolizer>
-
-        </Rule>
-      </FeatureTypeStyle>
-    </UserStyle>
-  </NamedLayer>
-</StyledLayerDescriptor>
+<?xml version="1.0" encoding="UTF-8"?>
+<sld:StyledLayerDescriptor xmlns="http://www.opengis.net/sld" xmlns:sld="http://www.opengis.net/sld" xmlns:gml="http://www.opengis.net/gml" xmlns:ogc="http://www.opengis.net/ogc" version="1.0.0">
+  <sld:NamedLayer>
+    <sld:Name>Red Pin Styler</sld:Name>
+    <sld:UserStyle>
+      <sld:Name>Red Pin Styler</sld:Name>
+      <sld:Title>Sites</sld:Title>
+      <sld:FeatureTypeStyle>
+        <sld:Name>name</sld:Name>
+        
+        <!-- Small pins for far zoom levels -->
+        <sld:Rule>
+          <sld:Title>Sites small</sld:Title>
+          <sld:MinScaleDenominator>1000000.0</sld:MinScaleDenominator>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <!-- Main pin body (teardrop shape approximation) -->
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#EA4335</sld:CssParameter>
+                </sld:Fill>
+                <sld:Stroke>
+                  <sld:CssParameter name="stroke">#C5221F</sld:CssParameter>
+                  <sld:CssParameter name="stroke-width">1</sld:CssParameter>
+                </sld:Stroke>
+              </sld:Mark>
+              <sld:Size>8</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+          <!-- White inner dot -->
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#FFFFFF</sld:CssParameter>
+                </sld:Fill>
+              </sld:Mark>
+              <sld:Size>3</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+        </sld:Rule>
+        
+        <!-- Medium pins -->
+        <sld:Rule>
+          <sld:Title>Sites medium</sld:Title>
+          <sld:MinScaleDenominator>100000.0</sld:MinScaleDenominator>
+          <sld:MaxScaleDenominator>1000000.0</sld:MaxScaleDenominator>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#EA4335</sld:CssParameter>
+                </sld:Fill>
+                <sld:Stroke>
+                  <sld:CssParameter name="stroke">#C5221F</sld:CssParameter>
+                  <sld:CssParameter name="stroke-width">2</sld:CssParameter>
+                </sld:Stroke>
+              </sld:Mark>
+              <sld:Size>14</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#FFFFFF</sld:CssParameter>
+                </sld:Fill>
+              </sld:Mark>
+              <sld:Size>6</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+        </sld:Rule>
+        
+        <!-- Large pins -->
+        <sld:Rule>
+          <sld:Title>Sites large</sld:Title>
+          <sld:MinScaleDenominator>10000.0</sld:MinScaleDenominator>
+          <sld:MaxScaleDenominator>100000.0</sld:MaxScaleDenominator>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#EA4335</sld:CssParameter>
+                </sld:Fill>
+                <sld:Stroke>
+                  <sld:CssParameter name="stroke">#C5221F</sld:CssParameter>
+                  <sld:CssParameter name="stroke-width">3</sld:CssParameter>
+                </sld:Stroke>
+              </sld:Mark>
+              <sld:Size>20</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#FFFFFF</sld:CssParameter>
+                </sld:Fill>
+              </sld:Mark>
+              <sld:Size>8</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+        </sld:Rule>
+        
+        <!-- Extra large pins for close zoom -->
+        <sld:Rule>
+          <sld:Title>Sites huge</sld:Title>
+          <sld:MinScaleDenominator>1.0</sld:MinScaleDenominator>
+          <sld:MaxScaleDenominator>10000.0</sld:MaxScaleDenominator>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#EA4335</sld:CssParameter>
+                </sld:Fill>
+                <sld:Stroke>
+                  <sld:CssParameter name="stroke">#C5221F</sld:CssParameter>
+                  <sld:CssParameter name="stroke-width">4</sld:CssParameter>
+                </sld:Stroke>
+              </sld:Mark>
+              <sld:Size>26</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+          <sld:PointSymbolizer>
+            <sld:Graphic>
+              <sld:Mark>
+                <sld:WellKnownName>circle</sld:WellKnownName>
+                <sld:Fill>
+                  <sld:CssParameter name="fill">#FFFFFF</sld:CssParameter>
+                </sld:Fill>
+              </sld:Mark>
+              <sld:Size>10</sld:Size>
+            </sld:Graphic>
+          </sld:PointSymbolizer>
+        </sld:Rule>
+        
+      </sld:FeatureTypeStyle>
+    </sld:UserStyle>
+  </sld:NamedLayer>
+</sld:StyledLayerDescriptor>
