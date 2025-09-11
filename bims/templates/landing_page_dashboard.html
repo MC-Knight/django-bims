@@ -4,6 +4,108 @@
     <a href="/map"><i class="fa fa-map-o"></i> &nbsp;Explore Map »</a>
 </div>
 
+<!-- Popup Modal -->
+<div id="taxonomyModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="taxonomyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taxonomyModalLabel">Taxonomic Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
+                    <div class="text-center">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.clickable-count {
+    cursor: pointer;
+    color: #00697d;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.clickable-count:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.taxonomy-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.taxonomy-item:hover {
+    background-color: #f8f9fa;
+}
+
+.taxonomy-item:last-child {
+    border-bottom: none;
+}
+
+.taxonomy-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.taxonomy-scientific {
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.taxonomy-meta {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 2px;
+}
+
+.conservation-status {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-lc { background-color: #28a745; color: white; }
+.status-nt { background-color: #ffc107; color: black; }
+.status-vu { background-color: #fd7e14; color: white; }
+.status-en { background-color: #dc3545; color: white; }
+.status-cr { background-color: #6f42c1; color: white; }
+.status-ne { background-color: #6c757d; color: white; }
+.status-dd { background-color: #17a2b8; color: white; }
+
+.origin-native { color: #28a745; font-weight: bold; }
+.origin-alien { color: #dc3545; font-weight: bold; }
+.origin-translocated { color: #fd7e14; font-weight: bold; }
+
+.modal-body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.taxonomy-summary {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+</style>
 
 <script>
     function getNumberWithCommas(number) {
@@ -27,6 +129,124 @@
         });
     }
 
+    function getConservationStatusClass(status) {
+        const statusMap = {
+            'LC': 'status-lc',
+            'NT': 'status-nt', 
+            'VU': 'status-vu',
+            'EN': 'status-en',
+            'CR': 'status-cr',
+            'NE': 'status-ne',
+            'DD': 'status-dd'
+        };
+        return statusMap[status] || 'status-ne';
+    }
+
+    function getOriginClass(origin) {
+        if (origin && origin.toLowerCase().includes('native')) return 'origin-native';
+        if (origin && origin.toLowerCase().includes('alien')) return 'origin-alien';
+        if (origin && origin.toLowerCase().includes('translocated')) return 'origin-translocated';
+        return '';
+    }
+
+    function showTaxonomyPopup(taxonGroupId, type, typeName, moduleName) {
+        const typeMap = {
+            'species': '/api/taxon-group-species/',
+            'families': '/api/taxon-group-families/', 
+            'orders': '/api/taxon-group-orders/'
+        };
+        
+        const endpoint = typeMap[type] + taxonGroupId + '/';
+        
+        // Set modal title
+        $('#taxonomyModalLabel').text(`${typeName} - ${moduleName}`);
+        
+        // Show loading state
+        $('#modalContent').html(`
+            <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Loading ${type}...</p>
+            </div>
+        `);
+        
+        // Show modal
+        $('#taxonomyModal').modal('show');
+        
+        // Fetch data
+        $.get(endpoint)
+            .then(function(data) {
+                renderTaxonomyData(data, type);
+            })
+            .catch(function(error) {
+                console.error('Error loading taxonomy data:', error);
+                $('#modalContent').html(`
+                    <div class="alert alert-danger">
+                        <h5>Error Loading Data</h5>
+                        <p>Failed to load ${type} data. Please try again later.</p>
+                    </div>
+                `);
+            });
+    }
+
+    function renderTaxonomyData(data, type) {
+        if (!data || !data.data || data.data.length === 0) {
+            $('#modalContent').html(`
+                <div class="alert alert-info">
+                    <h5>No Data Available</h5>
+                    <p>No ${type} data found for this taxon group.</p>
+                </div>
+            `);
+            return;
+        }
+
+        let content = `
+            <div class="taxonomy-summary">
+                <h6>${data.taxon_group_name}</h6>
+                <p><strong>Total ${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${data.total}</p>
+            </div>
+            <div class="taxonomy-list">
+        `;
+
+        data.data.forEach(item => {
+            content += '<div class="taxonomy-item">';
+            content += `<div class="taxonomy-name">${item.name}</div>`;
+            
+            if (item.scientific_name && item.scientific_name !== item.name) {
+                content += `<div class="taxonomy-scientific">${item.scientific_name}</div>`;
+            }
+            
+            let metaInfo = [];
+            
+            if (item.family_name) {
+                metaInfo.push(`Family: ${item.family_name}`);
+            }
+            
+            if (item.order_name) {
+                metaInfo.push(`Order: ${item.order_name}`);
+            }
+            
+            if (item.conservation_status) {
+                const statusClass = getConservationStatusClass(item.conservation_status);
+                metaInfo.push(`<span class="conservation-status ${statusClass}">${item.conservation_status}</span>`);
+            }
+            
+            if (item.origin) {
+                const originClass = getOriginClass(item.origin);
+                metaInfo.push(`<span class="${originClass}">${item.origin}</span>`);
+            }
+            
+            if (metaInfo.length > 0) {
+                content += `<div class="taxonomy-meta">${metaInfo.join(' • ')}</div>`;
+            }
+            
+            content += '</div>';
+        });
+
+        content += '</div>';
+        
+        $('#modalContent').html(content);
+    }
+
     function createModuleCharts(moduleData, moduleName, container) {
         if (!moduleData) {
             return;
@@ -34,7 +254,7 @@
         const img = new Image();
         let chartWrapper = $('<div class="chart-icon-wrapper" />');
         img.classList = 'module-icon';
-        img.style = 'width: 40px; height: 40px; margin-right: auto; margin-left: auto; display: block;s';
+        img.style = 'width: 40px; height: 40px; margin-right: auto; margin-left: auto; display: block;';
         img.src = moduleData['icon'];
         chartWrapper.append(img);
         let canvas = $(`<div class="donut-chart"><canvas id="chart-${moduleName}" width="150px" height="150px"></canvas></div>`);
@@ -129,13 +349,12 @@
         let $moduleInfoContainer = $(`<div class="module-info-container"/>`);
 
         $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurence Records</p>`
+            `<p class="module-info" style="margin-bottom: 0; font-size: 1em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurrence Records</p>`
         )
 
         if(moduleData.taxon_group_id){
-            loadTotalCounts(moduleData.taxon_group_id, $moduleInfoContainer);
+            loadTotalCounts(moduleData.taxon_group_id, $moduleInfoContainer, moduleName);
         }
-
 
         container.append($moduleInfoContainer);
 
@@ -181,7 +400,7 @@
         )
     }
 
-    function loadTotalCounts(taxonGroupId, container) {
+    function loadTotalCounts(taxonGroupId, container, moduleName) {
         const requests = [
             { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Total Species', type: 'species' },
             { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Total Families', type: 'families' },
@@ -192,9 +411,15 @@
             $.get(request.endpoint)
                 .then(function(data) {
                     if (data && data.total) {
+                        const clickableCount = `<span class="module-numbers clickable-count" 
+                            onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
+                            title="Click to view details">
+                            ${getNumberWithCommas(data.total)} ${request.label}
+                        </span>`;
+                        
                         container.append(
                             `<p class="module-info" style="margin-bottom: 0; font-size: 1em">
-                                <span class="module-numbers">${getNumberWithCommas(data.total)}</span> ${request.label}
+                                ${clickableCount} 
                             </p>`
                         );
                     }

@@ -11,6 +11,11 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         originLegends: {},
         endemismLegends: {},
         consStatusLegends: {},
+        
+        // MINIMAL FIX: Just add these two properties
+        isLoading: false,
+        requestTimeout: null,
+        
         apiParameters: _.template(Shared.SearchURLParametersTemplate),
         months: {
             'january': 1,
@@ -42,6 +47,24 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             this.currentSpeciesSearchResult = newList;
         },
         show: function (id, name, zoomToObject, addMarker) {
+            // MINIMAL FIX: Add simple duplicate prevention
+            if (this.isLoading) {
+                return;
+            }
+            
+            // Clear any existing timeout
+            if (this.requestTimeout) {
+                clearTimeout(this.requestTimeout);
+            }
+            
+            // Set loading flag
+            this.isLoading = true;
+            
+            // MINIMAL FIX: Auto-reset loading flag after reasonable time
+            this.requestTimeout = setTimeout(() => {
+                this.isLoading = false;
+            }, 5000);
+            
             this.originLegends = {};
             this.endemismLegends = {};
             this.consStatusLegends = {};
@@ -58,6 +81,12 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             this.showDetail(name, zoomToObject)
         },
         panelClosed: function (e) {
+            // MINIMAL FIX: Reset loading state when panel closes
+            this.isLoading = false;
+            if (this.requestTimeout) {
+                clearTimeout(this.requestTimeout);
+            }
+            
             // function that is called when the panel closed
             if (!Shared.CurrentState.SEARCH) {
                 Shared.Router.updateUrl('', false);
@@ -267,6 +296,12 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 url: this.url,
                 dataType: 'json',
                 success: function (data) {
+                    // MINIMAL FIX: Reset loading state on success
+                    self.isLoading = false;
+                    if (self.requestTimeout) {
+                        clearTimeout(self.requestTimeout);
+                    }
+                    
                     self.siteDetailData = data;
                     Shared.Dispatcher.trigger('sidePanel:updateSiteDetailData', self.siteDetailData);
 
@@ -322,6 +357,12 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     Shared.Dispatcher.trigger('layers:showFeatureInfo', lon, lat, true);
                 },
                 error: function (req, err) {
+                    // MINIMAL FIX: Reset loading state on error
+                    self.isLoading = false;
+                    if (self.requestTimeout) {
+                        clearTimeout(self.requestTimeout);
+                    }
+                    
                     Shared.Dispatcher.trigger('sidePanel:updateSidePanelHtml', {});
                 },
             });
