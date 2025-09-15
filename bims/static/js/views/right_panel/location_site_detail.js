@@ -39,6 +39,9 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             '#A2CE89',
             '#4E6440',
             '#525351'],
+        // NUCLEAR OPTION: Class-level request blocking with immediate lock
+        _requestLock: false,
+        
         initialize: function () {
             this.listenTo(Shared.Dispatcher, 'siteDetail:show', this.show);
             this.listenTo(Shared.Dispatcher, 'siteDetail:panelClosed', this.panelClosed);
@@ -48,6 +51,7 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         // ENHANCED FIX: Reset all loading states
         resetLoadingState: function() {
             this.isLoading = false;
+            this._requestLock = false; // NUCLEAR OPTION: Reset the lock too
             if (this.requestTimeout) {
                 clearTimeout(this.requestTimeout);
                 this.requestTimeout = null;
@@ -59,16 +63,34 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             this.currentSpeciesSearchResult = newList;
         },
         show: function (id, name, zoomToObject, addMarker) {
-            // ENHANCED FIX: More comprehensive duplicate prevention
+            // NUCLEAR OPTION: Immediate class-level lock before anything else
+            if (this._requestLock) {
+                console.log('BLOCKED: Request lock active');
+                return false;
+            }
+            this._requestLock = true; // Lock immediately
+            
+            // NUCLEAR OPTION: Set loading flag IMMEDIATELY at the very start
             if (this.isLoading) {
                 console.log('Site detail request blocked - already loading');
-                return;
+                this._requestLock = false; // Release lock
+                return false;
             }
+            this.isLoading = true; // Set this FIRST, before any other checks
             
             // ENHANCED FIX: Check if we're already showing this exact site
             if (this.siteId === id && this.siteDetailData) {
                 console.log('Site detail request blocked - same site already loaded');
-                return;
+                this.isLoading = false; // Reset since we're not making a request
+                this._requestLock = false; // Release lock
+                return false;
+            }
+            
+            // NUCLEAR OPTION: Also check if there's already a pending XHR
+            if (Shared.LocationSiteDetailXHRRequest) {
+                console.log('Site detail request blocked - XHR already in progress');
+                Shared.LocationSiteDetailXHRRequest.abort();
+                Shared.LocationSiteDetailXHRRequest = null;
             }
             
             // ENHANCED FIX: Generate unique request ID for this request
@@ -80,9 +102,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 clearTimeout(this.requestTimeout);
             }
             
-            // Set loading flag immediately
-            this.isLoading = true;
-            
             // ENHANCED FIX: Shorter timeout with better error handling
             this.requestTimeout = setTimeout(() => {
                 if (this.currentRequestId === requestId) {
@@ -90,6 +109,14 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     this.resetLoadingState();
                 }
             }, 3000); // Reduced from 5000ms to 3000ms
+            
+            // NUCLEAR OPTION: Also set a separate lock timeout as failsafe
+            setTimeout(() => {
+                if (this._requestLock) {
+                    console.warn('Request lock timeout - force releasing');
+                    this._requestLock = false;
+                }
+            }, 5000); // Longer timeout for the lock itself
             
             this.originLegends = {};
             this.endemismLegends = {};
