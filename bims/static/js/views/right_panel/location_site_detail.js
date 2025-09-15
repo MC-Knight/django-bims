@@ -56,9 +56,7 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             });
         },
         
-        initialize: function () {
-            this.log('INITIALIZE: Setting up event listeners');
-            
+        initialize: function () {            
             // Ensure only ONE instance exists globally
             if (window._globalSiteDetailView) {
                 this.logError('CRITICAL: Another SiteDetailView already exists! Destroying previous instance.');
@@ -82,14 +80,12 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 this.listenTo(Shared.Dispatcher, 'siteDetail:show', this.show);
                 this.listenTo(Shared.Dispatcher, 'siteDetail:panelClosed', this.panelClosed);
                 this.listenTo(Shared.Dispatcher, 'siteDetail:updateCurrentSpeciesSearchResult', this.updateCurrentSpeciesSearchResult);
-                this.log('INITIALIZE: Event listeners set up successfully');
             } catch (e) {
                 this.logError('INITIALIZE: Failed to set up event listeners', e);
             }
         },
         
         destroy: function() {
-            this.log('DESTROY: Cleaning up view');
             this.resetLoadingState('DESTROY');
             this.stopListening();
             if (this.$el) {
@@ -100,10 +96,7 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             }
         },
         
-        resetLoadingState: function(reason) {
-            this.log(`RESET_STATE: ${reason || 'Unknown reason'}`);
-            this.logState('BEFORE_RESET');
-            
+        resetLoadingState: function(reason) {            
             this.isLoading = false;
             this._requestLock = false;
             
@@ -118,25 +111,16 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             }
             
             this.currentRequestId = null;
-            this.logState('AFTER_RESET');
         },
         
         updateCurrentSpeciesSearchResult: function (newList) {
-            this.log('UPDATE_SPECIES_SEARCH_RESULT:', newList ? newList.length : 'null');
             this.currentSpeciesSearchResult = newList;
         },
         
         show: function (id, name, zoomToObject, addMarker) {
             const currentTime = Date.now();
             this._requestCount++;
-            
-            this.log(`SHOW CALLED #${this._requestCount}:`, {
-                id: id, name: name, zoomToObject: zoomToObject, addMarker: addMarker,
-                timeSinceLastRequest: currentTime - this._lastRequestTime
-            });
-            
-            console.trace(`SHOW METHOD CALL #${this._requestCount} for site ${id}`);
-            this.logState('SHOW_START');
+                        
             
             // Rapid fire detection
             if (currentTime - this._lastRequestTime < 100) {
@@ -146,35 +130,28 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             
             // Immediate class-level lock
             if (this._requestLock) {
-                this.log('BLOCKED: Request lock active - IMMEDIATE RETURN');
                 return false;
             }
             this._requestLock = true;
-            this.log('LOCK ACQUIRED');
             
             // Double-check loading state
             if (this.isLoading) {
-                this.log('BLOCKED: Already loading - RESETTING LOCK AND RETURNING');
                 this._requestLock = false;
                 return false;
             }
             this.isLoading = true;
-            this.log('LOADING FLAG SET');
             
             // Check for same site
             if (this.siteId === id && this.siteDetailData) {
-                this.log(`BLOCKED: Same site already loaded (${id}) - RESETTING AND RETURNING`);
                 this.resetLoadingState('SAME_SITE_ALREADY_LOADED');
                 return false;
             }
             
             // Check existing XHR
             if (Shared.LocationSiteDetailXHRRequest) {
-                this.log('EXISTING XHR FOUND - ABORTING');
                 try {
                     Shared.LocationSiteDetailXHRRequest.abort();
                     Shared.LocationSiteDetailXHRRequest = null;
-                    this.log('EXISTING XHR ABORTED SUCCESSFULLY');
                 } catch (e) {
                     this.logError('FAILED TO ABORT EXISTING XHR', e);
                 }
@@ -183,18 +160,15 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             // Generate unique request ID
             const requestId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             this.currentRequestId = requestId;
-            this.log(`GENERATED REQUEST ID: ${requestId}`);
             
             // Clear any existing timeout
             if (this.requestTimeout) {
                 clearTimeout(this.requestTimeout);
-                this.log('CLEARED EXISTING REQUEST TIMEOUT');
             }
             
             // Set timeouts with extensive logging
             this.requestTimeout = setTimeout(() => {
                 if (this.currentRequestId === requestId) {
-                    this.logError('REQUEST TIMEOUT TRIGGERED');
                     this.resetLoadingState('REQUEST_TIMEOUT');
                 } else {
                     this.log('REQUEST TIMEOUT IGNORED - STALE REQUEST ID');
@@ -226,9 +200,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             filterParameters = $.extend(true, {}, this.parameters);
             this.url = '/api/location-site-detail/' + this.apiParameters(this.parameters);
             
-            this.log(`CALLING SHOW_DETAIL with URL: ${this.url}`);
-            this.logState('BEFORE_SHOW_DETAIL');
-            
             try {
                 this.showDetail(name, zoomToObject, requestId);
                 this.log('SHOW_DETAIL CALLED SUCCESSFULLY');
@@ -238,30 +209,20 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             }
         },
         
-        panelClosed: function (e) {
-            this.log('PANEL_CLOSED EVENT');
-            this.logState('PANEL_CLOSED_START');
-            
+        panelClosed: function (e) {            
             this.resetLoadingState('PANEL_CLOSED');
             this.siteDetailData = null;
-            this.log('SITE_DETAIL_DATA CLEARED');
             
             if (!Shared.CurrentState.SEARCH) {
                 Shared.Router.updateUrl('', false);
-                this.log('ROUTER URL UPDATED (NON-SEARCH)');
             } else {
                 filterParameters['siteIdOpen'] = '';
-                this.log('FILTER PARAMETERS UPDATED (SEARCH)');
             }
-            
-            this.logState('PANEL_CLOSED_END');
         },
         
         showDetail: function (name, zoomToObject, requestId) {
             var self = this;
             
-            this.log(`SHOW_DETAIL START: ${name} - RequestID: ${requestId}`);
-            this.logState('SHOW_DETAIL_START');
             
             if (this.currentRequestId !== requestId) {
                 this.logError(`SHOW_DETAIL: Stale request detected! Current: ${this.currentRequestId}, Received: ${requestId}`);
@@ -269,7 +230,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             }
             
             // Direct DOM cleanup without triggering events
-            this.log('SHOW_DETAIL: Cleaning up existing panels');
             try {
                 // Direct DOM manipulation to avoid triggering panelClosed event
                 $('.right-panel').each(function(index) {
@@ -296,7 +256,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         continueShowDetail: function(name, zoomToObject, requestId) {
             var self = this;
             
-            this.log(`CONTINUE_SHOW_DETAIL: ${name} - RequestID: ${requestId}`);
             
             if (this.currentRequestId !== requestId) {
                 this.logError(`CONTINUE_SHOW_DETAIL: Stale request! Current: ${this.currentRequestId}, Received: ${requestId}`);
@@ -320,8 +279,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 '<div class="search-results-total" data-visibility="false"> ' +
                 '<span class="search-result-title"> Climate Data </span> ' +
                 '<i class="fa fa-angle-down pull-right filter-icon-arrow"></i></div></div>');
-
-            this.log('CONTINUE_SHOW_DETAIL: DOM elements created');
             
             try {
                 if ($('.right-panel').length === 0) {
@@ -336,14 +293,11 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 $siteDetailWrapper.find('.search-results-total').click(self.hideAll);
                 $siteDetailWrapper.find('.search-results-total').click();
                 
-                this.log('CONTINUE_SHOW_DETAIL: Content injected into DOM');
                 
                 // Trigger dispatcher events for side panel
                 Shared.Dispatcher.trigger('sidePanel:openSidePanel', {});
                 Shared.Dispatcher.trigger('sidePanel:fillSidePanelHtml', $siteDetailWrapper);
                 Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', '<i class="fa fa-map-marker"></i> Loading...');
-                
-                this.log('CONTINUE_SHOW_DETAIL: Dispatcher events triggered');
                 
             } catch (e) {
                 this.logError('CONTINUE_SHOW_DETAIL: Failed to setup side panel', e);
@@ -353,7 +307,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
 
             // Final XHR check and abort if needed
             if (Shared.LocationSiteDetailXHRRequest) {
-                this.logError('CONTINUE_SHOW_DETAIL: XHR still exists - ABORTING AGAIN');
                 try {
                     Shared.LocationSiteDetailXHRRequest.abort();
                     Shared.LocationSiteDetailXHRRequest = null;
@@ -362,7 +315,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 }
             }
             
-            this.log(`CONTINUE_SHOW_DETAIL: Starting AJAX request to: ${this.url}`);
             const ajaxStartTime = Date.now();
             
             Shared.LocationSiteDetailXHRRequest = $.get({
@@ -492,7 +444,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 },
             });
             
-            this.log('CONTINUE_SHOW_DETAIL: AJAX request initiated');
         },
         
         hideAll: function (e) {
@@ -513,9 +464,7 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         },
         
         renderPieChart: function (data, speciesType, chartName, chartCanvas) {
-            this.log(`RENDER_PIE_CHART: ${speciesType} - ${chartName}`);
             if (typeof data == 'undefined') {
-                this.log('RENDER_PIE_CHART: Data undefined, returning null');
                 return null;
             }
             
@@ -548,16 +497,13 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     dataKeys[i] + '</span></div>'
             }
             $(`#rp-${chartName}-legend`).html(chart_labels[chartName]);
-            this.log(`RENDER_PIE_CHART: ${chartName} completed`);
         },
         
         renderSiteDetailInfo: function (data) {
-            this.log('RENDER_SITE_DETAIL_INFO');
             var $detailWrapper = $('<div></div>');
             if (data.hasOwnProperty('site_detail_info')) {
                 let siteDetailsTemplate = _.template($('#site-details-template').html());
                 $detailWrapper.append(siteDetailsTemplate(data));
-                this.log('RENDER_SITE_DETAIL_INFO: Template applied');
             } else {
                 this.log('RENDER_SITE_DETAIL_INFO: No site_detail_info found');
             }
@@ -565,7 +511,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         },
         
         renderClimateData: function (data, containerElement) {
-            this.log('RENDER_CLIMATE_DATA');
             if (data.hasOwnProperty('climate_data')) {
                 let singleClimateDataTemplate = _.template($('#climate-data-template').html());
                 for (let climateKey of Object.keys(data['climate_data'])) {
@@ -578,19 +523,16 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     }))
                     this.renderMonthlyLineChart(data['climate_data'][climateKey], climateKey);
                 }
-                this.log('RENDER_CLIMATE_DATA: Completed');
             } else {
                 this.log('RENDER_CLIMATE_DATA: No climate_data found');
             }
         },
         
         createDataSummary: function (data) {
-            this.log('CREATE_DATA_SUMMARY');
             var bio_data = data['biodiversity_data'];
             this.renderPieChart(bio_data, 'fish', 'origin', document.getElementById('fish-rp-origin-pie'));
             this.renderPieChart(bio_data, 'fish', 'endemism', document.getElementById('fish-rp-endemism-pie'));
             this.renderPieChart(bio_data, 'fish', 'cons_status', document.getElementById('fish-rp-conservation-status-pie'));
-            this.log('CREATE_DATA_SUMMARY: Completed');
         },
         
         resetCanvas: function (chartCanvas) {
@@ -604,7 +546,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         },
         
         renderMonthlyLineChart: function (climateData, canvasId) {
-            this.log(`RENDER_MONTHLY_LINE_CHART: ${canvasId}`);
             let chartConfig = {
                 type: 'line',
                 data: {
@@ -626,11 +567,9 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             let chartCanvas = this.resetCanvas(document.getElementById(canvasId));
             let ctx = chartCanvas.getContext('2d');
             new ChartJs(ctx, chartConfig);
-            this.log(`RENDER_MONTHLY_LINE_CHART: ${canvasId} completed`);
         },
         
         parseNameFromAliases: function (alias, alias_type, data) {
-            this.log(`PARSE_NAME_FROM_ALIASES: ${alias} - ${alias_type}`);
             var name = alias;
             var choices = [];
             if (alias_type === 'cons_status') choices = this.flatten_arr(data['iucn_name_list']);
@@ -643,7 +582,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         },
         
         renderBiodiversityDataSection: function (container, data) {
-            this.log('RENDER_BIODIVERSITY_DATA_SECTION');
             let self = this;
             let biodiversitySectionTemplate = _.template($('#biodiversity-data-template-new').html());
             container.append(biodiversitySectionTemplate({ 
@@ -751,7 +689,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         },
         
         renderCharts: function () {
-            this.log('RENDER_CHARTS: Starting');
             let self = this;
             $.each(this.charts, function (index, chart) {
                 if (chart['data'].length > 0) {
@@ -759,11 +696,9 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     self.createPieChart(chart);
                 }
             });
-            this.log('RENDER_CHARTS: Completed');
         },
         
         createPieChart: function (chartData) {
-            this.log('CREATE_PIE_CHART: Starting');
             let self = this;
             let labels = [];
             let dataset = [];
@@ -799,16 +734,13 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             
             let ctx = chartCanvas[0].getContext('2d');
             new ChartJs(ctx, chartConfig);
-            this.log('CREATE_PIE_CHART: Completed');
         },
         
         renderLegends: function (legends, container) {
-            this.log('RENDER_LEGENDS: Starting');
             $.each(legends, function (key, value) {
                 container.append('<div><span style="color:' + value + ';">■</span>' +
                     '<span style="font-style: italic;">' + key + '</span></div>');
             });
-            this.log('RENDER_LEGENDS: Completed');
         },
     })
 });
