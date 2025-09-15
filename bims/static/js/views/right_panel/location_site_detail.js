@@ -12,9 +12,10 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         endemismLegends: {},
         consStatusLegends: {},
         
-        // MINIMAL FIX: Just add these two properties
+        // ENHANCED FIX: More robust loading state management
         isLoading: false,
         requestTimeout: null,
+        currentRequestId: null, // Track the current request to prevent stale responses
         
         apiParameters: _.template(Shared.SearchURLParametersTemplate),
         months: {
@@ -39,31 +40,56 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             '#4E6440',
             '#525351'],
         initialize: function () {
-            Shared.Dispatcher.on('siteDetail:show', this.show, this);
-            Shared.Dispatcher.on('siteDetail:panelClosed', this.panelClosed, this);
-            Shared.Dispatcher.on('siteDetail:updateCurrentSpeciesSearchResult', this.updateCurrentSpeciesSearchResult, this);
+            this.listenTo(Shared.Dispatcher, 'siteDetail:show', this.show);
+            this.listenTo(Shared.Dispatcher, 'siteDetail:panelClosed', this.panelClosed);
+            this.listenTo(Shared.Dispatcher, 'siteDetail:updateCurrentSpeciesSearchResult', this.updateCurrentSpeciesSearchResult);
         },
+        
+        // ENHANCED FIX: Reset all loading states
+        resetLoadingState: function() {
+            this.isLoading = false;
+            if (this.requestTimeout) {
+                clearTimeout(this.requestTimeout);
+                this.requestTimeout = null;
+            }
+            this.currentRequestId = null;
+        },
+        
         updateCurrentSpeciesSearchResult: function (newList) {
             this.currentSpeciesSearchResult = newList;
         },
         show: function (id, name, zoomToObject, addMarker) {
-            // MINIMAL FIX: Add simple duplicate prevention
+            // ENHANCED FIX: More comprehensive duplicate prevention
             if (this.isLoading) {
+                console.log('Site detail request blocked - already loading');
                 return;
             }
+            
+            // ENHANCED FIX: Check if we're already showing this exact site
+            if (this.siteId === id && this.siteDetailData) {
+                console.log('Site detail request blocked - same site already loaded');
+                return;
+            }
+            
+            // ENHANCED FIX: Generate unique request ID for this request
+            const requestId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            this.currentRequestId = requestId;
             
             // Clear any existing timeout
             if (this.requestTimeout) {
                 clearTimeout(this.requestTimeout);
             }
             
-            // Set loading flag
+            // Set loading flag immediately
             this.isLoading = true;
             
-            // MINIMAL FIX: Auto-reset loading flag after reasonable time
+            // ENHANCED FIX: Shorter timeout with better error handling
             this.requestTimeout = setTimeout(() => {
-                this.isLoading = false;
-            }, 5000);
+                if (this.currentRequestId === requestId) {
+                    console.warn('Site detail request timed out');
+                    this.resetLoadingState();
+                }
+            }, 3000); // Reduced from 5000ms to 3000ms
             
             this.originLegends = {};
             this.endemismLegends = {};
@@ -78,14 +104,16 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             this.parameters['siteId'] = id;
             filterParameters = $.extend(true, {}, this.parameters);
             this.url = '/api/location-site-detail/' + this.apiParameters(this.parameters);
-            this.showDetail(name, zoomToObject)
+            
+            // ENHANCED FIX: Pass requestId to showDetail
+            this.showDetail(name, zoomToObject, requestId)
         },
         panelClosed: function (e) {
-            // MINIMAL FIX: Reset loading state when panel closes
-            this.isLoading = false;
-            if (this.requestTimeout) {
-                clearTimeout(this.requestTimeout);
-            }
+            // ENHANCED FIX: Complete reset when panel closes
+            this.resetLoadingState();
+            
+            // Clear site data to allow re-opening same site
+            this.siteDetailData = null;
             
             // function that is called when the panel closed
             if (!Shared.CurrentState.SEARCH) {
@@ -260,8 +288,15 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             }
             return name;
         },
-        showDetail: function (name, zoomToObject) {
+        showDetail: function (name, zoomToObject, requestId) {
             var self = this;
+            
+            // ENHANCED FIX: Verify this is still the current request
+            if (this.currentRequestId !== requestId) {
+                console.log('Ignoring stale showDetail request');
+                return;
+            }
+            
             // Render basic information
             var $siteDetailWrapper = $('<div></div>');
             $siteDetailWrapper.append(
@@ -287,20 +322,25 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             $siteDetailWrapper.find('.search-results-total').click(self.hideAll);
             $siteDetailWrapper.find('.search-results-total').click();
 
-            // call detail
+            // ENHANCED FIX: More robust XHR management
             if (Shared.LocationSiteDetailXHRRequest) {
                 Shared.LocationSiteDetailXHRRequest.abort();
                 Shared.LocationSiteDetailXHRRequest = null;
             }
+            
             Shared.LocationSiteDetailXHRRequest = $.get({
                 url: this.url,
                 dataType: 'json',
+                timeout: 10000, // ENHANCED FIX: Add explicit timeout
                 success: function (data) {
-                    // MINIMAL FIX: Reset loading state on success
-                    self.isLoading = false;
-                    if (self.requestTimeout) {
-                        clearTimeout(self.requestTimeout);
+                    // ENHANCED FIX: Verify this is still the current request before processing
+                    if (self.currentRequestId !== requestId) {
+                        console.log('Ignoring stale AJAX response');
+                        return;
                     }
+                    
+                    // ENHANCED FIX: Reset loading state on success
+                    self.resetLoadingState();
                     
                     self.siteDetailData = data;
                     Shared.Dispatcher.trigger('sidePanel:updateSiteDetailData', self.siteDetailData);
@@ -346,7 +386,6 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     self.renderLegends(self.consStatusLegends, $('.cons-status-legends'));
 
                     self.renderClimateData(data, $('#climate-data'));
-                    // $('#climate-data').append(climateDataHTML);
 
                     Shared.LocationSiteDetailXHRRequest = null;
 
@@ -357,10 +396,19 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                     Shared.Dispatcher.trigger('layers:showFeatureInfo', lon, lat, true);
                 },
                 error: function (req, err) {
-                    // MINIMAL FIX: Reset loading state on error
-                    self.isLoading = false;
-                    if (self.requestTimeout) {
-                        clearTimeout(self.requestTimeout);
+                    // ENHANCED FIX: Only handle error if it's for the current request
+                    if (self.currentRequestId !== requestId) {
+                        console.log('Ignoring stale AJAX error');
+                        return;
+                    }
+                    
+                    // ENHANCED FIX: Reset loading state on error
+                    self.resetLoadingState();
+                    
+                    // Don't show error for aborted requests
+                    if (req.statusText !== 'abort') {
+                        console.error('Site detail loading failed:', err);
+                        Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', '<i class="fa fa-map-marker"></i> Error loading site');
                     }
                     
                     Shared.Dispatcher.trigger('sidePanel:updateSidePanelHtml', {});
