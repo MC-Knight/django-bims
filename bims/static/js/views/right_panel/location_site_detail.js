@@ -12,319 +12,298 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
         endemismLegends: {},
         consStatusLegends: {},
         
-        // ENHANCED FIX: More robust loading state management
+        // Complete protection system with extensive logging
         isLoading: false,
         requestTimeout: null,
-        currentRequestId: null, // Track the current request to prevent stale responses
+        currentRequestId: null,
+        _requestLock: false,
+        _lockTimeout: null,
+        _requestCount: 0,
+        _lastRequestTime: 0,
+        _debugMode: true, // Set to false in production if needed
         
         apiParameters: _.template(Shared.SearchURLParametersTemplate),
         months: {
-            'january': 1,
-            'february': 2,
-            'march': 3,
-            'april': 4,
-            'may': 5,
-            'june': 6,
-            'july': 7,
-            'august': 8,
-            'september': 9,
-            'october': 10,
-            'november': 11,
-            'december': 12
+            'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+            'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12
         },
-        chartBackgroundColours: [
-            '#8D2641',
-            '#D7CD47',
-            '#18A090',
-            '#A2CE89',
-            '#4E6440',
-            '#525351'],
-        // NUCLEAR OPTION: Class-level request blocking with immediate lock
-        _requestLock: false,
+        chartBackgroundColours: ['#8D2641', '#D7CD47', '#18A090', '#A2CE89', '#4E6440', '#525351'],
+        
+        log: function(message, data) {
+            if (this._debugMode) {
+                const timestamp = new Date().toISOString();
+                console.log(`[SiteDetail ${timestamp}] ${message}`, data || '');
+            }
+        },
+        
+        logError: function(message, error) {
+            const timestamp = new Date().toISOString();
+            console.error(`[SiteDetail ERROR ${timestamp}] ${message}`, error);
+            if (error && error.stack) {
+                console.error('Stack trace:', error.stack);
+            }
+        },
+        
+        logState: function(action) {
+            this.log(`STATE ${action}:`, {
+                isLoading: this.isLoading,
+                requestLock: this._requestLock,
+                currentRequestId: this.currentRequestId,
+                siteId: this.siteId,
+                requestCount: this._requestCount,
+                lastRequestTime: this._lastRequestTime,
+                timeSinceLastRequest: Date.now() - this._lastRequestTime
+            });
+        },
         
         initialize: function () {
-            this.listenTo(Shared.Dispatcher, 'siteDetail:show', this.show);
-            this.listenTo(Shared.Dispatcher, 'siteDetail:panelClosed', this.panelClosed);
-            this.listenTo(Shared.Dispatcher, 'siteDetail:updateCurrentSpeciesSearchResult', this.updateCurrentSpeciesSearchResult);
+            this.log('INITIALIZE: Setting up event listeners');
+            
+            // Ensure only ONE instance exists globally
+            if (window._globalSiteDetailView) {
+                this.logError('CRITICAL: Another SiteDetailView already exists! Destroying previous instance.');
+                try {
+                    window._globalSiteDetailView.destroy();
+                } catch (e) {
+                    this.logError('Failed to destroy previous instance', e);
+                }
+            }
+            window._globalSiteDetailView = this;
+            
+            // Track instance count for debugging
+            if (window._siteDetailViewCount) {
+                window._siteDetailViewCount++;
+                this.logError(`WARNING: Multiple SiteDetailView instances! Count: ${window._siteDetailViewCount}`);
+            } else {
+                window._siteDetailViewCount = 1;
+            }
+            
+            try {
+                this.listenTo(Shared.Dispatcher, 'siteDetail:show', this.show);
+                this.listenTo(Shared.Dispatcher, 'siteDetail:panelClosed', this.panelClosed);
+                this.listenTo(Shared.Dispatcher, 'siteDetail:updateCurrentSpeciesSearchResult', this.updateCurrentSpeciesSearchResult);
+                this.log('INITIALIZE: Event listeners set up successfully');
+            } catch (e) {
+                this.logError('INITIALIZE: Failed to set up event listeners', e);
+            }
         },
         
-        // ENHANCED FIX: Reset all loading states
-        resetLoadingState: function() {
+        destroy: function() {
+            this.log('DESTROY: Cleaning up view');
+            this.resetLoadingState('DESTROY');
+            this.stopListening();
+            if (this.$el) {
+                this.$el.remove();
+            }
+            if (window._globalSiteDetailView === this) {
+                window._globalSiteDetailView = null;
+            }
+        },
+        
+        resetLoadingState: function(reason) {
+            this.log(`RESET_STATE: ${reason || 'Unknown reason'}`);
+            this.logState('BEFORE_RESET');
+            
             this.isLoading = false;
-            this._requestLock = false; // NUCLEAR OPTION: Reset the lock too
+            this._requestLock = false;
+            
             if (this.requestTimeout) {
                 clearTimeout(this.requestTimeout);
                 this.requestTimeout = null;
             }
+            
+            if (this._lockTimeout) {
+                clearTimeout(this._lockTimeout);
+                this._lockTimeout = null;
+            }
+            
             this.currentRequestId = null;
+            this.logState('AFTER_RESET');
         },
         
         updateCurrentSpeciesSearchResult: function (newList) {
+            this.log('UPDATE_SPECIES_SEARCH_RESULT:', newList ? newList.length : 'null');
             this.currentSpeciesSearchResult = newList;
         },
+        
         show: function (id, name, zoomToObject, addMarker) {
-            // NUCLEAR OPTION: Immediate class-level lock before anything else
+            const currentTime = Date.now();
+            this._requestCount++;
+            
+            this.log(`SHOW CALLED #${this._requestCount}:`, {
+                id: id, name: name, zoomToObject: zoomToObject, addMarker: addMarker,
+                timeSinceLastRequest: currentTime - this._lastRequestTime
+            });
+            
+            console.trace(`SHOW METHOD CALL #${this._requestCount} for site ${id}`);
+            this.logState('SHOW_START');
+            
+            // Rapid fire detection
+            if (currentTime - this._lastRequestTime < 100) {
+                this.logError(`RAPID FIRE DETECTED! Time diff: ${currentTime - this._lastRequestTime}ms`);
+            }
+            this._lastRequestTime = currentTime;
+            
+            // Immediate class-level lock
             if (this._requestLock) {
-                console.log('BLOCKED: Request lock active');
+                this.log('BLOCKED: Request lock active - IMMEDIATE RETURN');
                 return false;
             }
-            this._requestLock = true; // Lock immediately
+            this._requestLock = true;
+            this.log('LOCK ACQUIRED');
             
-            // NUCLEAR OPTION: Set loading flag IMMEDIATELY at the very start
+            // Double-check loading state
             if (this.isLoading) {
-                console.log('Site detail request blocked - already loading');
-                this._requestLock = false; // Release lock
+                this.log('BLOCKED: Already loading - RESETTING LOCK AND RETURNING');
+                this._requestLock = false;
                 return false;
             }
-            this.isLoading = true; // Set this FIRST, before any other checks
+            this.isLoading = true;
+            this.log('LOADING FLAG SET');
             
-            // ENHANCED FIX: Check if we're already showing this exact site
+            // Check for same site
             if (this.siteId === id && this.siteDetailData) {
-                console.log('Site detail request blocked - same site already loaded');
-                this.isLoading = false; // Reset since we're not making a request
-                this._requestLock = false; // Release lock
+                this.log(`BLOCKED: Same site already loaded (${id}) - RESETTING AND RETURNING`);
+                this.resetLoadingState('SAME_SITE_ALREADY_LOADED');
                 return false;
             }
             
-            // NUCLEAR OPTION: Also check if there's already a pending XHR
+            // Check existing XHR
             if (Shared.LocationSiteDetailXHRRequest) {
-                console.log('Site detail request blocked - XHR already in progress');
-                Shared.LocationSiteDetailXHRRequest.abort();
-                Shared.LocationSiteDetailXHRRequest = null;
+                this.log('EXISTING XHR FOUND - ABORTING');
+                try {
+                    Shared.LocationSiteDetailXHRRequest.abort();
+                    Shared.LocationSiteDetailXHRRequest = null;
+                    this.log('EXISTING XHR ABORTED SUCCESSFULLY');
+                } catch (e) {
+                    this.logError('FAILED TO ABORT EXISTING XHR', e);
+                }
             }
             
-            // ENHANCED FIX: Generate unique request ID for this request
+            // Generate unique request ID
             const requestId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             this.currentRequestId = requestId;
+            this.log(`GENERATED REQUEST ID: ${requestId}`);
             
             // Clear any existing timeout
             if (this.requestTimeout) {
                 clearTimeout(this.requestTimeout);
+                this.log('CLEARED EXISTING REQUEST TIMEOUT');
             }
             
-            // ENHANCED FIX: Shorter timeout with better error handling
+            // Set timeouts with extensive logging
             this.requestTimeout = setTimeout(() => {
                 if (this.currentRequestId === requestId) {
-                    console.warn('Site detail request timed out');
-                    this.resetLoadingState();
+                    this.logError('REQUEST TIMEOUT TRIGGERED');
+                    this.resetLoadingState('REQUEST_TIMEOUT');
+                } else {
+                    this.log('REQUEST TIMEOUT IGNORED - STALE REQUEST ID');
                 }
-            }, 3000); // Reduced from 5000ms to 3000ms
+            }, 10000); // Increased timeout to 10 seconds
             
-            // NUCLEAR OPTION: Also set a separate lock timeout as failsafe
-            setTimeout(() => {
+            // Lock timeout failsafe
+            this._lockTimeout = setTimeout(() => {
                 if (this._requestLock) {
-                    console.warn('Request lock timeout - force releasing');
+                    this.logError('LOCK TIMEOUT - FORCE RELEASING');
                     this._requestLock = false;
                 }
-            }, 5000); // Longer timeout for the lock itself
+            }, 12000); // Increased lock timeout
             
+            // Set instance variables
             this.originLegends = {};
             this.endemismLegends = {};
             this.consStatusLegends = {};
             this.siteId = id;
             this.siteName = name;
             this.zoomToObject = zoomToObject;
+            
             if (typeof addMarker === 'undefined' || addMarker === null) {
                 this.addMarker = false;
             }
+            
             this.parameters = filterParameters;
             this.parameters['siteId'] = id;
             filterParameters = $.extend(true, {}, this.parameters);
             this.url = '/api/location-site-detail/' + this.apiParameters(this.parameters);
             
-            // ENHANCED FIX: Pass requestId to showDetail
-            this.showDetail(name, zoomToObject, requestId)
+            this.log(`CALLING SHOW_DETAIL with URL: ${this.url}`);
+            this.logState('BEFORE_SHOW_DETAIL');
+            
+            try {
+                this.showDetail(name, zoomToObject, requestId);
+                this.log('SHOW_DETAIL CALLED SUCCESSFULLY');
+            } catch (e) {
+                this.logError('SHOW_DETAIL FAILED', e);
+                this.resetLoadingState('SHOW_DETAIL_ERROR');
+            }
         },
+        
         panelClosed: function (e) {
-            // ENHANCED FIX: Complete reset when panel closes
-            this.resetLoadingState();
+            this.log('PANEL_CLOSED EVENT');
+            this.logState('PANEL_CLOSED_START');
             
-            // Clear site data to allow re-opening same site
+            this.resetLoadingState('PANEL_CLOSED');
             this.siteDetailData = null;
+            this.log('SITE_DETAIL_DATA CLEARED');
             
-            // function that is called when the panel closed
             if (!Shared.CurrentState.SEARCH) {
                 Shared.Router.updateUrl('', false);
+                this.log('ROUTER URL UPDATED (NON-SEARCH)');
             } else {
                 filterParameters['siteIdOpen'] = '';
+                this.log('FILTER PARAMETERS UPDATED (SEARCH)');
             }
+            
+            this.logState('PANEL_CLOSED_END');
         },
-        hideAll: function (e) {
-            var className = $(e.target).attr('class');
-            var target = $(e.target);
-            if (className === 'search-result-title') {
-                target = target.parent();
-            }
-            if (target.data('visibility')) {
-                target.find('.filter-icon-arrow').addClass('fa-angle-down');
-                target.find('.filter-icon-arrow').removeClass('fa-angle-up');
-                target.nextAll().hide();
-                target.data('visibility', false)
-            } else {
-                target.find('.filter-icon-arrow').addClass('fa-angle-up');
-                target.find('.filter-icon-arrow').removeClass('fa-angle-down');
-                target.nextAll().show();
-                target.data('visibility', true)
-            }
-        },
-        renderPieChart: function (data, speciesType, chartName, chartCanvas) {
-            if (typeof data == 'undefined') {
-                return null;
-            }
-            var backgroundColours = [
-                '#8D2641',
-                '#D7CD47',
-                '#18A090',
-                '#A2CE89',
-                '#4E6440',
-                '#525351']
-            var chartConfig = {
-                type: 'pie',
-                data: {
-                    datasets: [{
-                        data: data[speciesType][chartName + '_chart']['data'],
-                        backgroundColor: backgroundColours
-                    }],
-                    labels: data[speciesType][chartName + '_chart']['keys']
-                },
-                options: {
-                    responsive: false,
-                    legend: {display: false},
-                    title: {display: false},
-                    hover: {mode: 'nearest', intersect: false},
-                    borderWidth: 0,
-                }
-            };
-            chartCanvas = this.resetCanvas(chartCanvas);
-            var ctx = chartCanvas.getContext('2d');
-            new ChartJs(ctx, chartConfig);
-
-            // Render chart labels
-            var dataKeys = data[speciesType][chartName + '_chart']['keys'];
-            var dataLength = dataKeys.length;
-            var chart_labels = {};
-            chart_labels[chartName] = '';
-            for (var i = 0; i < dataLength; i++) {
-                chart_labels[chartName] += '<div><span style="color:' +
-                    backgroundColours[i] + ';">■</span>' +
-                    '<span class="species-ssdd-legend-title">&nbsp;' +
-                    dataKeys[i] + '</span></div>'
-            }
-            var element_name = `#rp-${chartName}-legend`;
-            $(element_name).html(chart_labels[chartName]);
-        },
-        renderSiteDetailInfo: function (data) {
-            var $detailWrapper = $('<div></div>');
-            if (data.hasOwnProperty('site_detail_info')) {
-                let siteDetailsTemplate = _.template($('#site-details-template').html());
-                $detailWrapper.append(siteDetailsTemplate(data));
-            }
-            return $detailWrapper;
-        },
-        renderClimateData: function (data, containerElement) {
-            if (data.hasOwnProperty('climate_data')) {
-                let singleClimateDataTemplate = _.template($('#climate-data-template').html());
-                for (let climateKey of Object.keys(data['climate_data'])) {
-                    containerElement.append(singleClimateDataTemplate({
-                        'title': data['climate_data'][climateKey]['title'],
-                        'key': climateKey,
-                        'data': data['climate_data'][climateKey],
-                        'wrapper': climateKey + '-wrapper'
-                    }))
-                    this.renderMonthlyLineChart(data['climate_data'][climateKey], climateKey);
-                }
-            }
-        },
-        createDataSummary: function (data) {
-            var bio_data = data['biodiversity_data'];
-            var origin_pie_canvas = document.getElementById('fish-rp-origin-pie');
-            this.renderPieChart(bio_data, 'fish', 'origin', origin_pie_canvas);
-
-            var endemism_pie_canvas = document.getElementById('fish-rp-endemism-pie');
-            this.renderPieChart(bio_data, 'fish', 'endemism', endemism_pie_canvas);
-
-            var conservation_status_pie_canvas = document.getElementById('fish-rp-conservation-status-pie');
-            this.renderPieChart(bio_data, 'fish', 'cons_status', conservation_status_pie_canvas);
-        },
-        resetCanvas: function (chartCanvas) {
-            var chartParent = chartCanvas.parentElement;
-            var newCanvas = document.createElement("CANVAS");
-            var chartId = chartCanvas.id;
-            newCanvas.id = chartId;
-            chartCanvas.remove();
-            chartParent.append(newCanvas);
-            return document.getElementById(chartId);
-        },
-        renderMonthlyLineChart: function (climateData, canvasId) {
-            let chartConfig = {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        data: climateData['values'],
-                        backgroundColor: '#D7CD47',
-                        borderColor: '#D7CD47',
-                        fill: false
-                    }],
-                    labels: climateData['keys']
-                },
-                options: {
-                    responsive: true,
-                    legend: {display: false},
-                    title: {display: false},
-                    hover: {mode: 'point', intersect: false},
-                    tooltips: {
-                        mode: 'point',
-                    },
-                    borderWidth: 0,
-                    scales: {
-                        xAxes: [{
-                            display: true,
-                            scaleLabel: {
-                                display: false,
-                                labelString: ''
-                            }
-                        }],
-                        yAxes: [{
-                            display: true,
-                            scaleLabel: {
-                                display: true,
-                                labelString: '(mm)'
-                            }
-                        }]
-                    }
-                }
-            };
-            let chartCanvas = document.getElementById(canvasId);
-            chartCanvas = this.resetCanvas(chartCanvas);
-            let ctx = chartCanvas.getContext('2d');
-            new ChartJs(ctx, chartConfig);
-        },
-        parseNameFromAliases: function (alias, alias_type, data) {
-            var name = alias;
-            var choices = [];
-            var index = 0;
-            if (alias_type === 'cons_status') {
-                choices = this.flatten_arr(data['iucn_name_list']);
-            }
-            if (alias_type === 'origin') {
-                choices = this.flatten_arr(data['origin_name_list']);
-            }
-            if (choices.length > 0) {
-                index = choices.indexOf(alias) + 1;
-                name = choices[index];
-            }
-            return name;
-        },
+        
         showDetail: function (name, zoomToObject, requestId) {
             var self = this;
             
-            // ENHANCED FIX: Verify this is still the current request
+            this.log(`SHOW_DETAIL START: ${name} - RequestID: ${requestId}`);
+            this.logState('SHOW_DETAIL_START');
+            
             if (this.currentRequestId !== requestId) {
-                console.log('Ignoring stale showDetail request');
+                this.logError(`SHOW_DETAIL: Stale request detected! Current: ${this.currentRequestId}, Received: ${requestId}`);
                 return;
             }
             
-            // Render basic information
+            // Direct DOM cleanup without triggering events
+            this.log('SHOW_DETAIL: Cleaning up existing panels');
+            try {
+                // Direct DOM manipulation to avoid triggering panelClosed event
+                $('.right-panel').each(function(index) {
+                    if (index > 0) {
+                        $(this).remove();
+                        self.log(`SHOW_DETAIL: Removed duplicate right-panel ${index}`);
+                    }
+                });
+                
+                // Ensure the main panel is visible and clear its content
+                $('.right-panel').show();
+                $('#content-panel').empty();
+                $('.right-panel-title').html('<i class="fa fa-map-marker"></i> Loading...');
+                $('.right-panel-loading').show();
+                
+            } catch (e) {
+                this.logError('SHOW_DETAIL: Error cleaning up existing panels', e);
+            }
+            
+            // Continue immediately without timeout to avoid race conditions
+            this.continueShowDetail(name, zoomToObject, requestId);
+        },
+        
+        continueShowDetail: function(name, zoomToObject, requestId) {
+            var self = this;
+            
+            this.log(`CONTINUE_SHOW_DETAIL: ${name} - RequestID: ${requestId}`);
+            
+            if (this.currentRequestId !== requestId) {
+                this.logError(`CONTINUE_SHOW_DETAIL: Stale request! Current: ${this.currentRequestId}, Received: ${requestId}`);
+                return;
+            }
+            
+            // Create wrapper content
             var $siteDetailWrapper = $('<div></div>');
             $siteDetailWrapper.append(
                 '<div id="site-detail" class="search-results-wrapper">' +
@@ -336,157 +315,384 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 '<div class="search-results-total" data-visibility="false"> ' +
                 '<span class="search-result-title"> Biodiversity Data </span> ' +
                 '<i class="fa fa-angle-down pull-right filter-icon-arrow"></i></div></div>');
-
             $siteDetailWrapper.append(
                 '<div id="climate-data" class="search-results-wrapper">' +
                 '<div class="search-results-total" data-visibility="false"> ' +
                 '<span class="search-result-title"> Climate Data </span> ' +
                 '<i class="fa fa-angle-down pull-right filter-icon-arrow"></i></div></div>');
 
-            Shared.Dispatcher.trigger('sidePanel:openSidePanel', {});
-            Shared.Dispatcher.trigger('sidePanel:fillSidePanelHtml', $siteDetailWrapper);
-            Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', '<i class="fa fa-map-marker"></i> Loading...');
-            $siteDetailWrapper.find('.search-results-total').click(self.hideAll);
-            $siteDetailWrapper.find('.search-results-total').click();
-
-            // ENHANCED FIX: More robust XHR management
-            if (Shared.LocationSiteDetailXHRRequest) {
-                Shared.LocationSiteDetailXHRRequest.abort();
-                Shared.LocationSiteDetailXHRRequest = null;
+            this.log('CONTINUE_SHOW_DETAIL: DOM elements created');
+            
+            try {
+                if ($('.right-panel').length === 0) {
+                    this.logError('CRITICAL: No right-panel found in DOM!');
+                    this.resetLoadingState('NO_RIGHT_PANEL');
+                    return;
+                }
+                
+                // Ensure panel is visible and populate content
+                $('.right-panel').show();
+                $('#content-panel').html($siteDetailWrapper);
+                $siteDetailWrapper.find('.search-results-total').click(self.hideAll);
+                $siteDetailWrapper.find('.search-results-total').click();
+                
+                this.log('CONTINUE_SHOW_DETAIL: Content injected into DOM');
+                
+                // Trigger dispatcher events for side panel
+                Shared.Dispatcher.trigger('sidePanel:openSidePanel', {});
+                Shared.Dispatcher.trigger('sidePanel:fillSidePanelHtml', $siteDetailWrapper);
+                Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', '<i class="fa fa-map-marker"></i> Loading...');
+                
+                this.log('CONTINUE_SHOW_DETAIL: Dispatcher events triggered');
+                
+            } catch (e) {
+                this.logError('CONTINUE_SHOW_DETAIL: Failed to setup side panel', e);
+                this.resetLoadingState('PANEL_SETUP_ERROR');
+                return;
             }
+
+            // Final XHR check and abort if needed
+            if (Shared.LocationSiteDetailXHRRequest) {
+                this.logError('CONTINUE_SHOW_DETAIL: XHR still exists - ABORTING AGAIN');
+                try {
+                    Shared.LocationSiteDetailXHRRequest.abort();
+                    Shared.LocationSiteDetailXHRRequest = null;
+                } catch (e) {
+                    this.logError('CONTINUE_SHOW_DETAIL: Failed to abort XHR', e);
+                }
+            }
+            
+            this.log(`CONTINUE_SHOW_DETAIL: Starting AJAX request to: ${this.url}`);
+            const ajaxStartTime = Date.now();
             
             Shared.LocationSiteDetailXHRRequest = $.get({
                 url: this.url,
                 dataType: 'json',
-                timeout: 10000, // ENHANCED FIX: Add explicit timeout
+                timeout: 15000, // Increased timeout
+                beforeSend: function(xhr, settings) {
+                    self.log('AJAX BEFORE_SEND:', settings.url);
+                },
                 success: function (data) {
-                    // ENHANCED FIX: Verify this is still the current request before processing
+                    const ajaxDuration = Date.now() - ajaxStartTime;
+                    self.log(`AJAX SUCCESS: Duration ${ajaxDuration}ms - RequestID: ${requestId}`);
+                    
                     if (self.currentRequestId !== requestId) {
-                        console.log('Ignoring stale AJAX response');
+                        self.logError(`AJAX SUCCESS: Ignoring stale response! Current: ${self.currentRequestId}, Response: ${requestId}`);
                         return;
                     }
                     
-                    // ENHANCED FIX: Reset loading state on success
-                    self.resetLoadingState();
+                    $('.right-panel-loading').hide();
+                    self.log('AJAX SUCCESS: Processing response data');
+                    self.resetLoadingState('AJAX_SUCCESS');
                     
-                    self.siteDetailData = data;
-                    Shared.Dispatcher.trigger('sidePanel:updateSiteDetailData', self.siteDetailData);
+                    try {
+                        self.siteDetailData = data;
+                        Shared.Dispatcher.trigger('sidePanel:updateSiteDetailData', self.siteDetailData);
 
-                    if (Shared.CurrentState.SEARCH) {
-                        filterParameters['siteIdOpen'] = data['id'];
-                    }
-                    let updatedUrl = Shared.UrlUtil.updateUrlParams(window.location.href, 'site', 'siteIdOpen', data['id']);
-                    if (updatedUrl) {
-                        Shared.Router.updateUrl(updatedUrl, false);
-                    }
-
-                    if (data['geometry']) {
-                        let feature = {
-                            id: data['id'],
-                            type: "Feature",
-                            geometry: JSON.parse(data['geometry']),
-                            properties: {}
-                        };
-                        let features = new ol.format.GeoJSON().readFeatures(feature, {
-                            featureProjection: 'EPSG:3857'
-                        });
-
-                        // Show marker
-                        if (zoomToObject) {
-                            Shared.Dispatcher.trigger('map:switchHighlight', features, !zoomToObject);
-                        } else {
-                            Shared.Dispatcher.trigger('map:switchHighlight', features, true);
+                        if (Shared.CurrentState.SEARCH) {
+                            filterParameters['siteIdOpen'] = data['id'];
+                            self.log('AJAX SUCCESS: Updated filter parameters');
                         }
+                        
+                        let updatedUrl = Shared.UrlUtil.updateUrlParams(window.location.href, 'site', 'siteIdOpen', data['id']);
+                        if (updatedUrl) {
+                            Shared.Router.updateUrl(updatedUrl, false);
+                            self.log('AJAX SUCCESS: Updated router URL');
+                        }
+
+                        if (data['geometry']) {
+                            self.log('AJAX SUCCESS: Processing geometry data');
+                            let feature = {
+                                id: data['id'],
+                                type: "Feature",
+                                geometry: JSON.parse(data['geometry']),
+                                properties: {}
+                            };
+                            let features = new ol.format.GeoJSON().readFeatures(feature, {
+                                featureProjection: 'EPSG:3857'
+                            });
+
+                            if (zoomToObject) {
+                                Shared.Dispatcher.trigger('map:switchHighlight', features, !zoomToObject);
+                            } else {
+                                Shared.Dispatcher.trigger('map:switchHighlight', features, true);
+                            }
+                            self.log('AJAX SUCCESS: Map highlight triggered');
+                        }
+                        
+                        let sidePanelTitle = '<i class="fa fa-map-marker"></i> ' + data['site_detail_info']['site_code'];
+                        if (isStaff || ( userID !== null && userID === data['owner']) ) {
+                            sidePanelTitle += '<a href="/location-site-form/update/?id=' + data['id'] + '" style="float: right; padding-top: 5px">Edit</a>';
+                        }
+                        
+                        Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', sidePanelTitle);
+                        $('.right-panel-title').html(sidePanelTitle);
+                        self.log('AJAX SUCCESS: Side panel title updated');
+
+                        self.log('AJAX SUCCESS: Starting to render components');
+                        $('#site-detail').append(self.renderSiteDetailInfo(data));
+                        self.renderBiodiversityDataSection($('#biodiversity-data'), data);
+                        self.renderCharts();
+                        self.renderLegends(self.originLegends, $('.origin-legends'));
+                        self.renderLegends(self.endemismLegends, $('.endemism-legends'));
+                        self.renderLegends(self.consStatusLegends, $('.cons-status-legends'));
+                        self.renderClimateData(data, $('#climate-data'));
+                        self.log('AJAX SUCCESS: All components rendered');
+
+                        Shared.LocationSiteDetailXHRRequest = null;
+
+                        if (data['site_detail_info'] && data['site_detail_info']['site_coordinates']) {
+                            let siteCoordinates = data['site_detail_info']['site_coordinates'].split(',');
+                            let lon = siteCoordinates[0].trim();
+                            let lat = siteCoordinates[1].trim();
+                            Shared.Dispatcher.trigger('layers:showFeatureInfo', lon, lat, true);
+                            self.log('AJAX SUCCESS: Feature info triggered');
+                        }
+                        
+                        self.log('AJAX SUCCESS: Complete processing finished successfully');
+                        
+                    } catch (e) {
+                        self.logError('AJAX SUCCESS: Error during processing', e);
+                        self.resetLoadingState('AJAX_SUCCESS_ERROR');
                     }
-                    let sidePanelTitle = '<i class="fa fa-map-marker"></i> ' + data['site_detail_info']['site_code'];
-                    if (isStaff || ( userID !== null && userID === data['owner']) ) {
-                        sidePanelTitle += '<a href="/location-site-form/update/?id=' + data['id'] + '" style="float: right; padding-top: 5px">Edit</a>';
-                    }
-                    Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', sidePanelTitle);
-
-                    // render site detail
-                    $('#site-detail').append(self.renderSiteDetailInfo(data));
-                    self.renderBiodiversityDataSection($('#biodiversity-data'), data);
-                    self.renderCharts();
-                    self.renderLegends(self.originLegends, $('.origin-legends'));
-                    self.renderLegends(self.endemismLegends, $('.endemism-legends'));
-                    self.renderLegends(self.consStatusLegends, $('.cons-status-legends'));
-
-                    self.renderClimateData(data, $('#climate-data'));
-
-                    Shared.LocationSiteDetailXHRRequest = null;
-
-                    // Features other than default site data exist, show the feature info
-                    let siteCoordinates = data['site_detail_info']['site_coordinates'].split(',');
-                    let lon = siteCoordinates[0].trim();
-                    let lat = siteCoordinates[1].trim();
-                    Shared.Dispatcher.trigger('layers:showFeatureInfo', lon, lat, true);
                 },
                 error: function (req, err) {
-                    // ENHANCED FIX: Only handle error if it's for the current request
+                    const ajaxDuration = Date.now() - ajaxStartTime;
+                    self.log(`AJAX ERROR: Duration ${ajaxDuration}ms - RequestID: ${requestId}`, {
+                        status: req.status, statusText: req.statusText, error: err
+                    });
+                    
+                    $('.right-panel-loading').hide();
+                    
                     if (self.currentRequestId !== requestId) {
-                        console.log('Ignoring stale AJAX error');
+                        self.log('AJAX ERROR: Ignoring stale error response');
                         return;
                     }
                     
-                    // ENHANCED FIX: Reset loading state on error
-                    self.resetLoadingState();
+                    self.resetLoadingState('AJAX_ERROR');
                     
-                    // Don't show error for aborted requests
                     if (req.statusText !== 'abort') {
-                        console.error('Site detail loading failed:', err);
-                        Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', '<i class="fa fa-map-marker"></i> Error loading site');
+                        self.logError('AJAX ERROR: Site detail loading failed', {
+                            status: req.status, statusText: req.statusText, responseText: req.responseText
+                        });
+                        
+                        let errorTitle = '<i class="fa fa-map-marker"></i> Error loading site';
+                        Shared.Dispatcher.trigger('sidePanel:updateSidePanelTitle', errorTitle);
+                        $('.right-panel-title').html(errorTitle);
+                        
+                        try {
+                            Shared.Dispatcher.trigger('sidePanel:updateSidePanelHtml', {});
+                            $('#content-panel').html('<div class="alert alert-danger">Failed to load site details. Please try again.</div>');
+                        } catch (e) {
+                            self.logError('AJAX ERROR: Failed to update side panel HTML', e);
+                        }
+                    } else {
+                        self.log('AJAX ERROR: Request was aborted (ignored)');
                     }
-                    
-                    Shared.Dispatcher.trigger('sidePanel:updateSidePanelHtml', {});
                 },
             });
+            
+            this.log('CONTINUE_SHOW_DETAIL: AJAX request initiated');
         },
+        
+        hideAll: function (e) {
+            var className = $(e.target).attr('class');
+            var target = $(e.target);
+            if (className === 'search-result-title') {
+                target = target.parent();
+            }
+            if (target.data('visibility')) {
+                target.find('.filter-icon-arrow').addClass('fa-angle-down').removeClass('fa-angle-up');
+                target.nextAll().hide();
+                target.data('visibility', false)
+            } else {
+                target.find('.filter-icon-arrow').addClass('fa-angle-up').removeClass('fa-angle-down');
+                target.nextAll().show();
+                target.data('visibility', true)
+            }
+        },
+        
+        renderPieChart: function (data, speciesType, chartName, chartCanvas) {
+            this.log(`RENDER_PIE_CHART: ${speciesType} - ${chartName}`);
+            if (typeof data == 'undefined') {
+                this.log('RENDER_PIE_CHART: Data undefined, returning null');
+                return null;
+            }
+            
+            var chartConfig = {
+                type: 'pie',
+                data: {
+                    datasets: [{
+                        data: data[speciesType][chartName + '_chart']['data'],
+                        backgroundColor: this.chartBackgroundColours
+                    }],
+                    labels: data[speciesType][chartName + '_chart']['keys']
+                },
+                options: {
+                    responsive: false, legend: {display: false}, title: {display: false},
+                    hover: {mode: 'nearest', intersect: false}, borderWidth: 0,
+                }
+            };
+            
+            chartCanvas = this.resetCanvas(chartCanvas);
+            var ctx = chartCanvas.getContext('2d');
+            new ChartJs(ctx, chartConfig);
+
+            var dataKeys = data[speciesType][chartName + '_chart']['keys'];
+            var chart_labels = {};
+            chart_labels[chartName] = '';
+            for (var i = 0; i < dataKeys.length; i++) {
+                chart_labels[chartName] += '<div><span style="color:' +
+                    this.chartBackgroundColours[i] + ';">■</span>' +
+                    '<span class="species-ssdd-legend-title">&nbsp;' +
+                    dataKeys[i] + '</span></div>'
+            }
+            $(`#rp-${chartName}-legend`).html(chart_labels[chartName]);
+            this.log(`RENDER_PIE_CHART: ${chartName} completed`);
+        },
+        
+        renderSiteDetailInfo: function (data) {
+            this.log('RENDER_SITE_DETAIL_INFO');
+            var $detailWrapper = $('<div></div>');
+            if (data.hasOwnProperty('site_detail_info')) {
+                let siteDetailsTemplate = _.template($('#site-details-template').html());
+                $detailWrapper.append(siteDetailsTemplate(data));
+                this.log('RENDER_SITE_DETAIL_INFO: Template applied');
+            } else {
+                this.log('RENDER_SITE_DETAIL_INFO: No site_detail_info found');
+            }
+            return $detailWrapper;
+        },
+        
+        renderClimateData: function (data, containerElement) {
+            this.log('RENDER_CLIMATE_DATA');
+            if (data.hasOwnProperty('climate_data')) {
+                let singleClimateDataTemplate = _.template($('#climate-data-template').html());
+                for (let climateKey of Object.keys(data['climate_data'])) {
+                    this.log(`RENDER_CLIMATE_DATA: Processing ${climateKey}`);
+                    containerElement.append(singleClimateDataTemplate({
+                        'title': data['climate_data'][climateKey]['title'],
+                        'key': climateKey,
+                        'data': data['climate_data'][climateKey],
+                        'wrapper': climateKey + '-wrapper'
+                    }))
+                    this.renderMonthlyLineChart(data['climate_data'][climateKey], climateKey);
+                }
+                this.log('RENDER_CLIMATE_DATA: Completed');
+            } else {
+                this.log('RENDER_CLIMATE_DATA: No climate_data found');
+            }
+        },
+        
+        createDataSummary: function (data) {
+            this.log('CREATE_DATA_SUMMARY');
+            var bio_data = data['biodiversity_data'];
+            this.renderPieChart(bio_data, 'fish', 'origin', document.getElementById('fish-rp-origin-pie'));
+            this.renderPieChart(bio_data, 'fish', 'endemism', document.getElementById('fish-rp-endemism-pie'));
+            this.renderPieChart(bio_data, 'fish', 'cons_status', document.getElementById('fish-rp-conservation-status-pie'));
+            this.log('CREATE_DATA_SUMMARY: Completed');
+        },
+        
+        resetCanvas: function (chartCanvas) {
+            var chartParent = chartCanvas.parentElement;
+            var newCanvas = document.createElement("CANVAS");
+            var chartId = chartCanvas.id;
+            newCanvas.id = chartId;
+            chartCanvas.remove();
+            chartParent.append(newCanvas);
+            return document.getElementById(chartId);
+        },
+        
+        renderMonthlyLineChart: function (climateData, canvasId) {
+            this.log(`RENDER_MONTHLY_LINE_CHART: ${canvasId}`);
+            let chartConfig = {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: climateData['values'], backgroundColor: '#D7CD47',
+                        borderColor: '#D7CD47', fill: false
+                    }],
+                    labels: climateData['keys']
+                },
+                options: {
+                    responsive: true, legend: {display: false}, title: {display: false},
+                    hover: {mode: 'point', intersect: false}, tooltips: {mode: 'point'}, borderWidth: 0,
+                    scales: {
+                        xAxes: [{display: true, scaleLabel: {display: false, labelString: ''}}],
+                        yAxes: [{display: true, scaleLabel: {display: true, labelString: '(mm)'}}]
+                    }
+                }
+            };
+            let chartCanvas = this.resetCanvas(document.getElementById(canvasId));
+            let ctx = chartCanvas.getContext('2d');
+            new ChartJs(ctx, chartConfig);
+            this.log(`RENDER_MONTHLY_LINE_CHART: ${canvasId} completed`);
+        },
+        
+        parseNameFromAliases: function (alias, alias_type, data) {
+            this.log(`PARSE_NAME_FROM_ALIASES: ${alias} - ${alias_type}`);
+            var name = alias;
+            var choices = [];
+            if (alias_type === 'cons_status') choices = this.flatten_arr(data['iucn_name_list']);
+            if (alias_type === 'origin') choices = this.flatten_arr(data['origin_name_list']);
+            if (choices.length > 0) {
+                var index = choices.indexOf(alias) + 1;
+                name = choices[index];
+            }
+            return name;
+        },
+        
         renderBiodiversityDataSection: function (container, data) {
+            this.log('RENDER_BIODIVERSITY_DATA_SECTION');
             let self = this;
             let biodiversitySectionTemplate = _.template($('#biodiversity-data-template-new').html());
-            container.append(biodiversitySectionTemplate({ data: data.biodiversity_data,
+            container.append(biodiversitySectionTemplate({ 
+                data: data.biodiversity_data,
                 is_sass_enabled: is_sass_enabled,
                 is_water_temperature_enabled: is_water_temperature_enabled,
-                sass_exist: data.sass_exist,
-                add_data: true,
+                sass_exist: data.sass_exist, add_data: true,
                 water_temperature_exist: data.water_temperature_exist,
                 physico_chemical_exist: data.physico_chemical_exist,
             }));
+            
             $.each(data['biodiversity_data'], function (key, value) {
+                self.log(`RENDER_BIODIVERSITY: Processing module ${value.module}`);
                 self.charts.push({
                     'canvas': $("#origin-chart-" + value.module),
-                    'data': value['origin'],
-                    'legends': self.originLegends
+                    'data': value['origin'], 'legends': self.originLegends
                 });
                 self.charts.push({
                     'canvas': $("#endemism-chart-" + value.module),
-                    'data': value['endemism'],
-                    'legends': self.endemismLegends
+                    'data': value['endemism'], 'legends': self.endemismLegends
                 });
                 self.charts.push({
                     'canvas': $("#cons-chart-" + value.module),
-                    'data': value['cons_status'],
-                    'legends': self.consStatusLegends
+                    'data': value['cons_status'], 'legends': self.consStatusLegends
                 });
             });
+            
+            // Event handlers with logging
             $('.sp-open-dashboard').click(function (e) {
+                self.log('SP_OPEN_DASHBOARD clicked');
                 let parameters = $.extend(true, {}, filterParameters);
                 const $target = $(e.target);
                 if ($target.hasClass("disabled")) {
+                    self.log('SP_OPEN_DASHBOARD: Target disabled, returning false');
                     return false;
                 }
                 parameters['modules'] = $target.data('module')
                 Shared.Router.updateUrl('site-detail/' + self.apiParameters(parameters).substr(1), true);
             });
+            
             $('.sp-add-record').click(function (e) {
-                let url = '#';
+                self.log('SP_ADD_RECORD clicked');
                 const $target = $(e.target);
-                if ($target.hasClass("disabled")) {
-                    return false;
-                }
+                if ($target.hasClass("disabled")) return false;
+                
                 const moduleId = $target.data('module-id');
                 const moduleName = $target.data('module-name');
+                let url = '#';
+                
                 if (moduleName.toLowerCase() === 'fish') {
                     url = '/fish-form/?siteId=' + self.siteId;
                 } else if (moduleName.toLowerCase() === 'invertebrates') {
@@ -496,56 +702,68 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
                 } else {
                     url = `/module-form/?siteId=${self.siteId}&module=${moduleId}`;
                 }
+                self.log(`SP_ADD_RECORD: Navigating to ${url}`);
                 window.location = url;
             });
+            
             $('.sp-sass-dashboard').click(function () {
-                let sassUrl = '';
-                if (typeof self.siteId !== 'undefined') {
-                    sassUrl = '/sass/dashboard/' + self.siteId + '/';
-                } else {
-                    sassUrl = '/sass/dashboard-multi-sites/';
-                }
+                self.log('SP_SASS_DASHBOARD clicked');
+                let sassUrl = typeof self.siteId !== 'undefined' ? '/sass/dashboard/' + self.siteId + '/' : '/sass/dashboard-multi-sites/';
                 sassUrl += self.apiParameters(filterParameters);
                 window.location.href = sassUrl;
             });
+            
             $('.sp-add-sass').click(function () {
+                self.log('SP_ADD_SASS clicked');
                 window.location.href = '/sass/' + self.siteId;
             });
+            
             $('.sp-add-water-temperature').click(function () {
+                self.log('SP_ADD_WATER_TEMPERATURE clicked');
                 window.location.href = '/water-temperature-form/?siteId=' + self.siteId;
             });
+            
             $('.sp-add-physico-chemical-data').click(function () {
+                self.log('SP_ADD_PHYSICO_CHEMICAL_DATA clicked');
                 window.location.href = '/physico-chemical-form/?siteId=' + self.siteId;
             });
+            
             $('.sp-water-temperature').click(function (e) {
-                let waterTemperatureUrl = '';
+                self.log('SP_WATER_TEMPERATURE clicked');
                 if (typeof self.siteId !== 'undefined') {
-                    waterTemperatureUrl = '/water-temperature/' + self.siteId + '/';
+                    let waterTemperatureUrl = '/water-temperature/' + self.siteId + '/' + self.apiParameters(filterParameters);
+                    window.location.href = waterTemperatureUrl;
                 }
-                waterTemperatureUrl += self.apiParameters(filterParameters);
-                window.location.href = waterTemperatureUrl;
             });
+            
             $('.sp-physico-chemical').click(function (e) {
-                let url = '/physico-chemical/' + self.siteId + '/';
-                url += self.apiParameters(filterParameters);
+                self.log('SP_PHYSICO_CHEMICAL clicked');
+                let url = '/physico-chemical/' + self.siteId + '/' + self.apiParameters(filterParameters);
                 window.location.href = url;
             });
         },
+        
         flatten_arr: function (arr) {
             let self = this;
             return arr.reduce(function (flat, toFlatten) {
                 return flat.concat(Array.isArray(toFlatten) ? self.flatten_arr(toFlatten) : toFlatten);
             }, []);
         },
+        
         renderCharts: function () {
+            this.log('RENDER_CHARTS: Starting');
             let self = this;
             $.each(this.charts, function (index, chart) {
                 if (chart['data'].length > 0) {
+                    self.log(`RENDER_CHARTS: Processing chart ${index}`);
                     self.createPieChart(chart);
                 }
-            })
+            });
+            this.log('RENDER_CHARTS: Completed');
         },
+        
         createPieChart: function (chartData) {
+            this.log('CREATE_PIE_CHART: Starting');
             let self = this;
             let labels = [];
             let dataset = [];
@@ -553,6 +771,7 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             let data = chartData['data'];
             let chartCanvas = chartData['canvas'];
             let legends = chartData['legends'];
+            
             $.each(data, function (key, value) {
                 labels.push(value['name']);
                 dataset.push(value['count']);
@@ -569,30 +788,27 @@ define(['backbone', 'ol', 'shared', 'chartJs', 'jquery'], function (Backbone, ol
             let chartConfig = {
                 type: 'pie',
                 data: {
-                    datasets: [{
-                        data: dataset,
-                        backgroundColor: colours
-                    }],
+                    datasets: [{data: dataset, backgroundColor: colours}],
                     labels: labels
                 },
                 options: {
-                    responsive: false,
-                    legend: {display: false},
-                    title: {display: false},
-                    hover: {mode: 'nearest', intersect: false},
-                    borderWidth: 0,
+                    responsive: false, legend: {display: false}, title: {display: false},
+                    hover: {mode: 'nearest', intersect: false}, borderWidth: 0,
                 }
             };
+            
             let ctx = chartCanvas[0].getContext('2d');
             new ChartJs(ctx, chartConfig);
+            this.log('CREATE_PIE_CHART: Completed');
         },
+        
         renderLegends: function (legends, container) {
+            this.log('RENDER_LEGENDS: Starting');
             $.each(legends, function (key, value) {
-                container.append('<div><span style="color:' +
-                    value + ';">■</span>' +
-                    '<span style="font-style: italic;">' +
-                    key + '</span></div>');
+                container.append('<div><span style="color:' + value + ';">■</span>' +
+                    '<span style="font-style: italic;">' + key + '</span></div>');
             });
+            this.log('RENDER_LEGENDS: Completed');
         },
     })
 });

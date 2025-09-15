@@ -68,11 +68,17 @@ require([
     'jqueryUi',
     'jquery'
 ], function (Router, olmap, Shared, App, Bootstrap, jqueryUi, $) {
-    // Display the map
-    Shared.Router = new Router();
-
-    // Start Backbone history a necessary step for bookmarkable URL's
-    Backbone.history.start({hashChange: true, root: "/map/"});
+    
+    if (!Backbone.History.started) {
+        console.log('Starting Backbone history for the first time');
+        Shared.Router = new Router();
+        Backbone.history.start({hashChange: true, root: "/map/"});
+    } else {
+        console.warn('Backbone.history already started - skipping initialization');
+        if (!Shared.Router) {
+            Shared.Router = new Router();
+        }
+    }
 
     // A $( document ).ready() block.
     $(document).ready(function () {
