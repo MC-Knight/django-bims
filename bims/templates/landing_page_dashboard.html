@@ -402,9 +402,9 @@
 
     function loadTotalCounts(taxonGroupId, container, moduleName) {
         const requests = [
-            { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Total Species', type: 'species' },
-            { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Total Families', type: 'families' },
-            { endpoint: `/api/taxon-group-orders/${taxonGroupId}/`, label: 'Total Orders', type: 'orders' }
+            { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Species', type: 'species' },
+            { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Families', type: 'families' },
+            { endpoint: `/api/taxon-group-orders/${taxonGroupId}/`, label: 'Orders', type: 'orders' }
         ];
         
         requests.forEach(request => {
