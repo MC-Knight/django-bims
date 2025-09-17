@@ -92,6 +92,10 @@ from bims.views.download_taxa_template import download_taxa_template
 from bims.views.physico_chemical import PhysicoChemicalView, \
     PhysicoChemicalSiteView
 
+
+# rbis mods
+from bims.views.biodiversity_threats import biodiversity_threats_view, biodiversity_threat_detail_view
+
 urlpatterns = [
     url(r'^$', landing_page_view, name='landing-page'),
     url(r'^map/$', MapPageView.as_view(), name='map-page'),
@@ -259,6 +263,12 @@ urlpatterns = [
         r'^account/moderation_sent/(?P<inactive_user>[^/]*)$',
         moderator_contacted,
         name='moderator_contacted'),
+    
+    # RBIS Mods
+    url(r'^biodiversity-threats/$', biodiversity_threats_view,
+        name='biodiversity-threats'),
+    url(r'^biodiversity-threat/(?P<pk>\d+)/$', biodiversity_threat_detail_view,
+        name='biodiversity-threat-detail'),
 ]
 
 # Api urls
