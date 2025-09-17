@@ -184,6 +184,45 @@
 }
 
 .biodiversity-threat-details a {
+    width: 100% !important;
     color: #007cba;
     text-decoration: underline;
+}
+
+@media screen and (max-width: 850px) {
+    .biodiversity-threats-home{
+        padding: 20px;
+    }
+    .biodiversity-threats-home h1{
+        font-size: 17pt;
+    }
+    .biodiversity-threats-home p{
+        font-size: 10pt;
+    }
+
+    .biodiversity-threats-intro {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .threat-article{
+        width: 100%;
+    }
+    .threat-article h2{
+        font-size: 16pt;
+    }
+    .biodiversity-threat-details{
+        width: 100%;
+        padding: 20px;
+    }
+    .biodiversity-threat-details h1{
+        font-size: 17pt;
+    }
+    .biodiversity-threat-details-content{
+        font-size: 10pt;
+    }
+    .biodiversity-threat-details div p samp span a span{
+        display: block;
+        width: 100% !important;
+    }
 }
