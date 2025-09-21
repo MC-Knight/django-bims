@@ -15,13 +15,12 @@
 {% endblock %}
 
 {% block body_content %}
-    <div class="content">
+    <div class="content" style="height: 100%;">
         {% block content %}
 
             {% csrf_token %}
-            <div class="container">
-
-                <div class="custom-form-container">
+            <div class="container" style="height: 100%;">
+                <div class="custom-form-container" style="margin-top: 200px;">
                     <h1>{% trans "Account Pending Approval" %}</h1>
                         <p>{% blocktrans %}We have sent the administrators a notice to approve your account associated with <b>{{ email }}</b>.
                             If the account is approved, you will receive a confirmation notice.{% endblocktrans %}</p>
@@ -33,5 +32,4 @@
 
 {% block foot %}
     <script src="{% static "js/libs/bootstrap-4.0.0/js/bootstrap.min.js" %}"></script>
-    <link rel="stylesheet" href="{% static 'css/landing_page.css' %}">
 {% endblock %}
