@@ -193,7 +193,7 @@
             $('#modalContent').html(`
                 <div class="alert alert-info">
                     <h5>No Data Available</h5>
-                    <p>No ${type} data found for this taxon group.</p>
+                    <p>No ${type} data found.</p>
                 </div>
             `);
             return;
@@ -401,31 +401,75 @@
     }
 
     function loadTotalCounts(taxonGroupId, container, moduleName) {
+        const orderedItems = [
+            { label: 'Orders', type: 'orders', id: `orders-${taxonGroupId}` },
+            { label: 'Families', type: 'families', id: `families-${taxonGroupId}` },
+            { label: 'Species', type: 'species', id: `species-${taxonGroupId}` }
+        ];
+        
+        if (!$('#loading-pulse-css').length) {
+            $('head').append(`
+                <style id="loading-pulse-css">
+                    .loading-pulse {
+                        display: inline-block;
+                        background: linear-gradient(-90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+                        background-size: 400% 400%;
+                        animation: pulse 1.5s ease-in-out infinite;
+                        border-radius: 3px;
+                        height: 1em;
+                        width: 60px;
+                        vertical-align: middle;
+                    }
+                    
+                    @keyframes pulse {
+                        0% { background-position: 0% 0%; }
+                        100% { background-position: -200% 0%; }
+                    }
+                </style>
+            `);
+        }
+        
+        orderedItems.forEach(item => {
+            const placeholderElement = $(`
+                <p class="module-info" style="margin-bottom: 0; font-size: 1em" id="${item.id}">
+                    <span class="loading-pulse"></span> ${item.label}
+                </p>
+            `);
+            container.append(placeholderElement);
+        });
+        
+       
         const requests = [
             { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Species', type: 'species' },
             { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Families', type: 'families' },
             { endpoint: `/api/taxon-group-orders/${taxonGroupId}/`, label: 'Orders', type: 'orders' }
         ];
         
+       
         requests.forEach(request => {
             $.get(request.endpoint)
                 .then(function(data) {
-                    if (data && data.total) {
-                        const clickableCount = `<span class="module-numbers clickable-count" 
-                            onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
-                            title="Click to view details">
-                            ${getNumberWithCommas(data.total)} ${request.label}
-                        </span>`;
-                        
-                        container.append(
-                            `<p class="module-info" style="margin-bottom: 0; font-size: 1em">
-                                ${clickableCount} 
-                            </p>`
-                        );
-                    }
+                    const targetId = `${request.type}-${taxonGroupId}`;
+                    const total = data && data.total ? data.total : 0;
+                    
+                    
+                    const clickableCount = `<span class="module-numbers clickable-count" 
+                        onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
+                        title="Click to view details">
+                        ${getNumberWithCommas(total)} ${request.label}
+                    </span>`;
+                    
+                    $(`#${targetId}`).html(clickableCount);
                 })
                 .catch(function(error) {
                     console.error(`Error loading total ${request.type}:`, error);
+                    const targetId = `${request.type}-${taxonGroupId}`;
+                    const clickableCount = `<span class="module-numbers clickable-count" 
+                        onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
+                        title="Click to view details">
+                        0 ${request.label}
+                    </span>`;
+                    $(`#${targetId}`).html(clickableCount);
                 });
         });
     }
