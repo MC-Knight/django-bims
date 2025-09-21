@@ -1,0 +1,31 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+{% load jsonify %}
+
+
+{% block subtitle %}
+    Biodiversity Threats in Rwanda
+{% endblock %}
+
+{% block head %}
+    <link href="{% static "rbis/biodiversity_threats.css" %}" rel="stylesheet">
+{% endblock %}
+
+s
+
+
+{% block body_content %}
+<div class="biodiversity-threat-details">
+    <h1>
+        {{ biodiversity_threat.title }}
+    </h1>
+
+    <div class="biodiversity-threat-details-poster">
+        <img src="{{ biodiversity_threat.poster.url }}" alt="{{ biodiversity_threat.title }}">
+    </div>
+
+    <div class="biodiversity-threat-details-content">
+        {{ biodiversity_threat.content|safe }}
+    </div>
+</div>
+{% endblock %}

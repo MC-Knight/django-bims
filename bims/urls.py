@@ -95,6 +95,8 @@ from bims.views.physico_chemical import PhysicoChemicalView, \
 
 # rbis mods
 from bims.views.biodiversity_threats import biodiversity_threats_view, biodiversity_threat_detail_view
+from bims.views.biodiversity_assessments import biodiversity_assessments_view, biodiversity_assesment_detail_view
+
 
 urlpatterns = [
     url(r'^$', landing_page_view, name='landing-page'),
@@ -269,6 +271,10 @@ urlpatterns = [
         name='biodiversity-threats'),
     url(r'^biodiversity-threat/(?P<pk>\d+)/$', biodiversity_threat_detail_view,
         name='biodiversity-threat-detail'),
+    url(r'^biodiversity-assessments/$', biodiversity_assessments_view,
+        name='biodiversity-assessments'),
+    url(r'^biodiversity-assessment/(?P<pk>\d+)/$', biodiversity_assesment_detail_view,
+        name='biodiversity-assessment-detail'),
 ]
 
 # Api urls
