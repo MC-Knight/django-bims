@@ -27,7 +27,7 @@ s
         {% for assessment in biodiversity_assessments %}
             {% if assessment.content_title %}
                 <div class="assessment-article">            
-                    <a href="{% url 'biodiversity-threat-detail' pk=assessment.id %}">{{assessment.title}}</a>
+                    <a href="{% url 'biodiversity-assessment-detail' pk=assessment.id %}">{{assessment.title}}</a>
                 </div>
             {% else %}
                 <div class="assessment-link">            
