@@ -94,6 +94,7 @@ from bims.models import (
     DecisionSupportTool, 
     Unit,
     BiodiversityThreat,
+    BiodiversityAssessment,
 )
 from bims.models.climate_data import ClimateData
 from bims.utils.fetch_gbif import merge_taxa_data
@@ -1634,3 +1635,4 @@ admin.site.register(ClimateData, ClimateDataAdmin)
 
 # RBIS Mods
 admin.site.register(BiodiversityThreat)
+admin.site.register(BiodiversityAssessment)

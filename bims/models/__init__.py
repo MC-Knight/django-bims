@@ -56,3 +56,4 @@ from bims.models.taxon_extra_attribute import *  # noqa
 from bims.models.decision_support_tool import *  # noqa
 from bims.models.geocontext_setting import GeocontextSetting
 from bims.models.biodiversity_threats import *  # noqa
+from bims.models.biodiversity_assessment import *  # noqa
