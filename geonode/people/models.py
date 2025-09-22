@@ -187,10 +187,9 @@ class Profile(AbstractUser):
         became_active = self.is_active and not self._previous_active_state
         if became_active and self.last_login is None:
             try:
-                # send_notification(users=(self,), label="account_active")
-
-                from invitations.adapters import get_invitations_adapter
-                current_site = Site.objects.get_current()
+                from django.core.mail import send_mail
+                from invitations.adapters import BaseInvitationsAdapter
+                current_site = Site.objects.first()
                 ctx = {
                     'username': self.username,
                     'current_site': current_site,
@@ -199,16 +198,21 @@ class Profile(AbstractUser):
                     'inviter': self,
                 }
 
-                email_template = 'pinax/notifications/account_active/account_active'
-                adapter = get_invitations_adapter()
-                adapter.send_invitation_email(email_template, self.email, ctx)
+                send_mail(
+                    '{} Account Activation Confirmation'.format(current_site.name),
+                    'Congratulations, your account has been activated.\n\n'
+                    'Thank you for registering the {site_name}\n\n'
+                    'Your username is {username}\n\n'
+                    'Regards,\n'
+                    '{site_name} Team'.format(**ctx),
+                    settings.SERVER_EMAIL,
+                    [ctx['email']],
+                    fail_silently=False
+                )
             except Exception:
                 import traceback
                 traceback.print_exc()
 
-    def send_mail(self, template_prefix, context):
-        if self.email:
-            get_adapter().send_mail(template_prefix, self.email, context)
 
 
 def get_anonymous_user_instance(user_model):

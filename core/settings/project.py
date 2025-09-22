@@ -52,7 +52,7 @@ GRUNT_MODULES = {
 TEMP_FOLDER = MEDIA_ROOT + "/temp"
 
 # Saving geometry of country in focused countries
-FOCUSED_COUNTRIES = ["South Africa"]
+FOCUSED_COUNTRIES = ["South Africa", "Rwanda"]
 
 # Geometry used for others
 # Turn off if it is not used (like showing on map)

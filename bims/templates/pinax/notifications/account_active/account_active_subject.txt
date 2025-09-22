@@ -1,0 +1,1 @@
+[{{ current_site }}] Account activated email notification

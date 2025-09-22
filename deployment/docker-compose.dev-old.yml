@@ -51,12 +51,12 @@ services:
       dockerfile: deployment/docker/Dockerfile-dev
     entrypoint: [ ]
     environment:
-      - ADMIN_EMAILS=${ADMIN_EMAILS:-dimas@kartoza.com}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-tetobobo43@gmail.com}
       - APP_NAME=bims
       - ASYNC_SIGNALS=True
       - BROKER_URL=amqp://rabbitmq:5672
       - C_FORCE_ROOT=1
-      - CONTACT_US_EMAIL=${ADMIN_EMAILS:-dimas@kartoza.com}
+      - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo43@gmail.com}
       - ALLOWED_HOSTS=['*']
       - DATABASE_HOST=db
       - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
@@ -97,12 +97,12 @@ services:
     command: ''
     entrypoint: [ ]
     environment:
-      - ADMIN_EMAILS=${ADMIN_EMAILS:-dimas@kartoza.com}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-tetobobo43@gmail.com}
       - APP_NAME=bims
       - ASYNC_SIGNALS=True
       - BROKER_URL=amqp://rabbitmq:5672
       - C_FORCE_ROOT=1
-      - CONTACT_US_EMAIL=${ADMIN_EMAILS:-dimas@kartoza.com}
+      - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo43@gmail.com}
       - ALLOWED_HOSTS=['*']
       - DATABASE_HOST=db
       - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
