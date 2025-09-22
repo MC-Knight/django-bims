@@ -51,6 +51,11 @@ x-common-django:
     - STATIC_ROOT=/home/web/static/static
     - VIRTUAL_HOST=bims.kartoza.com
     - VIRTUAL_PORT=8080
+    - EMAIL_HOST=${EMAIL_HOST}
+    - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+    - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+    - EMAIL_PORT=${EMAIL_PORT}
+    - EMAIL_SUBJECT_PREFIX=${EMAIL_SUBJECT_PREFIX}
   volumes:
     - static-data:/home/web/static
     - media-data:/home/web/media
@@ -105,12 +110,6 @@ services:
     container_name: bims_prod_uwsgi
     ports:
       - "8080:8080"
-    environment:
-      EMAIL_HOST: ${EMAIL_HOST}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
-      EMAIL_PORT: ${EMAIL_PORT}
-      EMAIL_SUBJECT_PREFIX: ${EMAIL_SUBJECT_PREFIX}
 
   worker:
     <<: *default-common-django
