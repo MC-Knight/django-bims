@@ -271,6 +271,7 @@
         let alienInvasive = 0;
         let alienNonInvasive = 0;
         let unspecified = 0;
+        let moduleId = moduleData['taxon_group_id'] ? moduleData['taxon_group_id'] : null;
 
         let ce = 'Critically endangered'
         let dd = 'Data deficient'
@@ -349,7 +350,14 @@
         let $moduleInfoContainer = $(`<div class="module-info-container"/>`);
 
         $moduleInfoContainer.append(
-            `<p class="module-info" style="margin-bottom: 0; font-size: 1em"><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurrence Records</p>`
+            `<a 
+                style="margin-bottom: 0; font-size: 1em; cursor: pointer;
+                color: #00697d;
+                text-decoration: none;
+                transition: color 0.2s;
+                background: none;
+                border: none;" 
+                href="/map/#search//taxon=&search=&siteId=&collector=&category=&yearFrom=&yearTo=&months=&boundary=&userBoundary=&referenceCategory=&spatialFilter=&reference=&endemic=&conservationStatus=[]&modules=${moduleId}&validated=&sourceCollection=&abioticData=&ecologicalCategory=&rank=&siteIdOpen=&orderBy=name&polygon=&thermalModule=&dst="><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurrence Records</a>`
         )
 
         if(moduleData.taxon_group_id){
