@@ -63,6 +63,16 @@ class TaxaProcessor(object):
         else:
             cons_status = DataCSVUpload.row_value(
                 row, CONSERVATION_STATUS_NATIONAL)
+
+        # ✅ FIXED: Add check to prevent errors when cons_status is None or empty
+        if not cons_status:
+            return None
+
+        # ✅ FIXED: Add validation for unknown conservation statuses
+        if cons_status.lower() not in IUCN_CATEGORIES:
+            logger.warning(f"Unknown conservation status: {cons_status}")
+            return None
+
         iucn_status, _ = IUCNStatus.objects.get_or_create(
             category=IUCN_CATEGORIES[cons_status.lower()]
         )
@@ -366,7 +376,7 @@ class TaxaProcessor(object):
                     taxonomy.endemism = endemism
 
                 # -- Conservation status global
-                iucn_status = self.conservation_status(row)
+                iucn_status = self.conservation_status(row, True)  # ✅ FIXED: Pass True for global
                 if iucn_status:
                     taxonomy.iucn_status = iucn_status
 
@@ -401,12 +411,15 @@ class TaxaProcessor(object):
 
                 if not taxonomy.taxonomic_status and taxonomic_status:
                     taxonomy.taxonomic_status = taxonomic_status
-                    
+
                 taxonomy.validated = True
                 taxonomy.save()
                 self.finish_processing_row(row, taxonomy)
         except Exception as e:  # noqa
-            self.handle_error(row, str(e))
+            # ✅ FIXED: Better error handling to show actual error messages
+            error_msg = str(e) if str(e) else f"{type(e).__name__}: {repr(e)}"
+            logger.error(f"Error processing taxon {taxon_name}: {error_msg}", exc_info=True)
+            self.handle_error(row, error_msg)
 
 
 class TaxaCSVUpload(DataCSVUpload, TaxaProcessor):
