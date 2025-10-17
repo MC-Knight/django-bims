@@ -6,20 +6,17 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi',
         layer: null,
         source: null,
         displayed: false,
-        miniSASSSelected: false,
         inWARDSelected: false,
         fetchingInWARDSData: false,
         inWARDSStationsUrl: "/bims_proxy/https://inwards.award.org.za/app_json/wq_stations.php",
         events: {
             'click .close-button': 'closeClicked',
             'click .update-search': 'updateSearch',
-            'change .mini-sass-check': 'toggleMiniSASSLayer',
             'change .inward-check': 'toggleInward'
         },
         initialize: function (options) {
             _.bindAll(this, 'render');
             this.map = options.map;
-            this.addMiniSASSLayer();
             this.addInWARDSLayer();
             Shared.Dispatcher.on('third_party_layers:showFeatureInfo', this.showFeatureInfo, this);
         },
@@ -46,47 +43,6 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi',
             });
             this.inWARDSLayer.setVisible(false);
             this.map.addLayer(this.inWARDSLayer);
-        },
-        addMiniSASSLayer: function () {
-            let options = {
-                url: '/bims_proxy/http://minisass.org:8080/geoserver/wms',
-                params: {
-                    name: 'MiniSASS',
-                    layers: 'miniSASS:minisass_observations',
-                    format: 'image/png',
-                    getFeatureFormat: 'text/html'
-                }
-            };
-            this.miniSASSLayer = new ol.layer.Tile({
-                source: new ol.source.TileWMS(options)
-            });
-            this.miniSASSLayer.setVisible(false);
-            this.map.addLayer(this.miniSASSLayer);
-            Shared.Dispatcher.trigger(
-                'layers:renderLegend',
-                options['params']['layers'],
-                options['params']['name'],
-                options['url'],
-                options['params']['layers'],
-                false
-            );
-        },
-        toggleMiniSASSLayer: function (e) {
-            this.miniSASSSelected = $(e.target).is(":checked");
-            if (this.miniSASSSelected) {
-                this.miniSASSLayer.setVisible(true);
-                // Move layer to top
-                this.map.removeLayer(this.miniSASSLayer);
-                this.map.getLayers().insertAt(this.map.getLayers().getLength(), this.miniSASSLayer);
-                let mapLegend = $('#map-legend');
-                mapLegend.find(`[data-name='${this.miniSASSLayer.getSource().getParams()['layers']}']`).show();
-                if (!mapLegend.is('visible')) {
-                    Shared.Dispatcher.trigger('map:showMapLegends');
-                }
-            } else {
-                this.miniSASSLayer.setVisible(false);
-                $('#map-legend').find(`[data-name='${this.miniSASSLayer.getSource().getParams()['layers']}']`).hide();
-            }
         },
         toggleInward: function (e) {
             let self = this;
@@ -124,9 +80,10 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi',
             }
         },
         showFeatureInfo: function (lon, lat, siteExist = false, featureData = null) {
-            if (!this.miniSASSSelected && !this.inWARDSelected) {
+            if (!this.inWARDSelected) {
                 return false;
             }
+
             let self = this;
             lon = parseFloat(lon);
             lat = parseFloat(lat);
@@ -148,36 +105,6 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi',
                     lon, lat, stationName, table.prop('outerHTML'), siteExist, openSidePanel
                 )
                 openSidePanel = true;
-            }
-
-            if (this.miniSASSSelected) {
-                const source = this.miniSASSLayer.getSource();
-                const getFeatureFormat = source.getParams()['getFeatureFormat'];
-                const layerName = source.getParams()['name'];
-                const queryLayer = source.getParams()['layers'];
-                let layerSource = source.getGetFeatureInfoUrl(
-                    coordinate,
-                    view.getResolution(),
-                    view.getProjection(),
-                    {'INFO_FORMAT': getFeatureFormat}
-                );
-                layerSource += '&QUERY_LAYERS=' + queryLayer;
-                $.ajax({
-                    type: 'POST',
-                    url: '/get_feature/',
-                    data: {
-                        'layerSource': layerSource
-                    },
-                    success: function (data) {
-                        if (!data) {
-                            return true;
-                        }
-                        self.showContentToSidePanel(
-                            lon, lat, layerName, data, siteExist, openSidePanel
-                        )
-                        openSidePanel = true;
-                    }
-                });
             }
         },
         showContentToSidePanel: function (lon, lat, panelTitle, panelContent, siteExist, openSidePanel = false) {
