@@ -110,15 +110,15 @@ class ModuleSummary(APIView):
 
         # FAST: Only counts for taxonomy hierarchy
         # from bims.enums.taxonomic_rank import TaxonomicRank
-        
+
         # unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
         # taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
-        
+
         # Collect unique names efficiently
         # order_names = set()
         # family_names = set()
         # species_count = 0
-        
+
         # for taxonomy in taxonomies:
         #     if taxonomy.order_name:
         #         order_names.add(taxonomy.order_name)
@@ -126,7 +126,7 @@ class ModuleSummary(APIView):
         #         family_names.add(taxonomy.family_name)
         #     if taxonomy.rank in [TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]:
         #         species_count += 1
-        
+
         # # ADD: Include taxon group ID for reference
         # summary['orders'] = {'total': len(order_names)}
         # summary['families'] = {'total': len(family_names)}
@@ -139,13 +139,13 @@ class ModuleSummary(APIView):
         summary['total'] = collections.count()
         summary['total_site'] = collections.distinct('site').count()
         summary['total_site_visit'] = collections.distinct('survey').count()
-        
+
         return summary
 
 
     def get(self, request, *args):
         response_data = dict()
-         
+
         # Add taxon group summaries
         taxon_groups = TaxonGroup.objects.filter(
             category=TaxonomicGroupCategory.SPECIES_MODULE.name,
@@ -156,7 +156,7 @@ class ModuleSummary(APIView):
                 self.module_summary_data(taxon_group)
             )
         return Response(response_data)
-    
+
 
 
 class GeneralModuleSummary(APIView):
@@ -186,14 +186,14 @@ class GeneralModuleSummary(APIView):
         # Use the same relationship structure as your existing code
         total_occurrences = 0
         total_taxa = 0
-        
+
         for taxon_group in taxon_groups:
             # Count occurrences using the same filter as your existing module_summary_data
             occurrences_count = BiologicalCollectionRecord.objects.filter(
                 module_group=taxon_group
             ).count()
             total_occurrences += occurrences_count
-            
+
             # Count taxa for this taxon group
             taxa_count = BiologicalCollectionRecord.objects.filter(
                 module_group=taxon_group
@@ -214,7 +214,7 @@ class GeneralModuleSummary(APIView):
 
     def get(self, request, *args):
         return Response(self.general_summary_data())
-    
+
 
 class TaxonGroupOrdersAPIView(APIView):
     """
@@ -225,25 +225,22 @@ class TaxonGroupOrdersAPIView(APIView):
             taxon_group = TaxonGroup.objects.get(id=taxon_group_id)
         except TaxonGroup.DoesNotExist:
             return Response({'error': 'Taxon group not found'}, status=404)
-        
+
         # Pagination
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         search = request.GET.get('search', '')
-        
-        collections = BiologicalCollectionRecord.objects.filter(
-            module_group=taxon_group
-        )
-        unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
-        taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
-        
+
+        # FIX: Query taxonomies directly from the taxon group
+        taxonomies = taxon_group.taxonomies.all()
+
         # Collect order data
         orders_data = {}  # Use dict to avoid duplicates
-        
+
         for taxonomy in taxonomies:
             order_name = taxonomy.order_name
             if order_name:
-                if search.lower() in order_name.lower():
+                if not search or search.lower() in order_name.lower():
                     # Find an actual order-level taxonomy if it exists
                     order_taxonomy = taxonomy.parent_by_rank('ORDER')
                     orders_data[order_name] = {
@@ -251,17 +248,17 @@ class TaxonGroupOrdersAPIView(APIView):
                         'name': order_name,
                         'scientific_name': order_taxonomy.scientific_name if order_taxonomy else order_name
                     }
-        
+
         # Convert to list and sort
         orders_list = list(orders_data.values())
         orders_list.sort(key=lambda x: x['name'])
-        
+
         # Apply pagination
         total = len(orders_list)
         start = (page - 1) * page_size
         end = start + page_size
         paginated_orders = orders_list[start:end]
-        
+
         return Response({
             'taxon_group_id': taxon_group_id,
             'taxon_group_name': taxon_group.name,
@@ -274,6 +271,7 @@ class TaxonGroupOrdersAPIView(APIView):
         })
 
 
+
 class TaxonGroupFamiliesAPIView(APIView):
     """
     API endpoint for families within a specific taxon group
@@ -283,25 +281,22 @@ class TaxonGroupFamiliesAPIView(APIView):
             taxon_group = TaxonGroup.objects.get(id=taxon_group_id)
         except TaxonGroup.DoesNotExist:
             return Response({'error': 'Taxon group not found'}, status=404)
-        
+
         # Pagination
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         search = request.GET.get('search', '')
-        
-        collections = BiologicalCollectionRecord.objects.filter(
-            module_group=taxon_group
-        )
-        unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
-        taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
-        
+
+        # FIX: Query taxonomies directly from the taxon group
+        taxonomies = taxon_group.taxonomies.all()
+
         # Collect family data
         families_data = {}
-        
+
         for taxonomy in taxonomies:
             family_name = taxonomy.family_name
             if family_name:
-                if search.lower() in family_name.lower():
+                if not search or search.lower() in family_name.lower():
                     family_taxonomy = taxonomy.parent_by_rank('FAMILY')
                     families_data[family_name] = {
                         'id': family_taxonomy.id if family_taxonomy else None,
@@ -309,17 +304,17 @@ class TaxonGroupFamiliesAPIView(APIView):
                         'scientific_name': family_taxonomy.scientific_name if family_taxonomy else family_name,
                         'order_name': taxonomy.order_name
                     }
-        
+
         # Convert to list and sort
         families_list = list(families_data.values())
         families_list.sort(key=lambda x: x['name'])
-        
+
         # Apply pagination
         total = len(families_list)
         start = (page - 1) * page_size
         end = start + page_size
         paginated_families = families_list[start:end]
-        
+
         return Response({
             'taxon_group_id': taxon_group_id,
             'taxon_group_name': taxon_group.name,
@@ -332,6 +327,8 @@ class TaxonGroupFamiliesAPIView(APIView):
         })
 
 
+
+
 class TaxonGroupSpeciesAPIView(APIView):
     """
     API endpoint for species within a specific taxon group
@@ -341,40 +338,34 @@ class TaxonGroupSpeciesAPIView(APIView):
             taxon_group = TaxonGroup.objects.get(id=taxon_group_id)
         except TaxonGroup.DoesNotExist:
             return Response({'error': 'Taxon group not found'}, status=404)
-        
+
         # Pagination
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         search = request.GET.get('search', '')
-        
+
         from bims.enums.taxonomic_rank import TaxonomicRank
-        
-        collections = BiologicalCollectionRecord.objects.filter(
-            module_group=taxon_group
-        )
-        unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
-        
-        # Filter species-level taxonomies
-        species_taxonomies = Taxonomy.objects.filter(
-            id__in=unique_taxonomy_ids,
+
+        # FIX: Query taxonomies directly from the taxon group
+        species_taxonomies = taxon_group.taxonomies.filter(
             rank__in=[TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]
         )
-        
+
         # Apply search filter
         if search:
             species_taxonomies = species_taxonomies.filter(
                 Q(canonical_name__icontains=search) |
                 Q(scientific_name__icontains=search)
             )
-        
+
         # Get total count before pagination
         total = species_taxonomies.count()
-        
+
         # Apply pagination
         start = (page - 1) * page_size
         end = start + page_size
         paginated_species = species_taxonomies[start:end]
-        
+
         # Format data
         species_data = []
         for taxonomy in paginated_species:
@@ -388,7 +379,7 @@ class TaxonGroupSpeciesAPIView(APIView):
                 'conservation_status': taxonomy.iucn_status.category if taxonomy.iucn_status else 'Not evaluated',
                 'origin': dict(Taxonomy.CATEGORY_CHOICES).get(taxonomy.origin, 'Unknown') if taxonomy.origin else 'Unknown'
             })
-        
+
         return Response({
             'taxon_group_id': taxon_group_id,
             'taxon_group_name': taxon_group.name,
