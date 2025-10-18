@@ -116,6 +116,20 @@ services:
       - ./scheduler-data:/home/scheduler-data
     command: python -m celery --app=bims.celery:app worker --schedule /home/geocontext-scheduler/celerybeat-schedule -B --schedule /home/scheduler-data/celerybeat-schedule -l debug
 
+  searchworker:
+    <<: *default-common-django
+    container_name: bims_search_worker
+    hostname: worker
+    depends_on:
+      - db
+      - cache
+      - rabbitmq
+    volumes:
+      - ../:/home/web/django_project
+      - ./static:/home/web/static:rw
+      - ./media:/home/web/media:rw
+    command: python -m celery worker --app=bims.celery:app -Q search -B -l debug
+
   dev:
     <<: *default-common-django
     container_name: bims_dev_django

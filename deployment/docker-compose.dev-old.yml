@@ -89,6 +89,49 @@ services:
       - cache:cache
     command: celery worker --app=bims.celery:app --schedule /home/geocontext-scheduler/celerybeat-schedule -B -l debug
 
+
+  searchworker:
+    build:
+      context: ../
+      dockerfile: deployment/docker/Dockerfile-dev
+    entrypoint: [ ]
+    environment:
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-tetobobo43@gmail.com}
+      - APP_NAME=bims
+      - ASYNC_SIGNALS=True
+      - BROKER_URL=amqp://rabbitmq:5672
+      - C_FORCE_ROOT=1
+      - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo43@gmail.com}
+      - ALLOWED_HOSTS=['*']
+      - DATABASE_HOST=db
+      - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
+      - DATABASE_PASSWORD=${POSTGRES_PASS:-docker}
+      - DATABASE_URL=postgis://${POSTGRES_USER:-docker}:${POSTGRES_PASS:-docker}@db:5432/${POSTGRES_DBNAME:-gis}
+      - DATABASE_USERNAME=${POSTGRES_USER:-docker}
+      - DJANGO_SETTINGS_MODULE=core.settings.dev_docker
+      - GEOCONTEXT_URL=${GEOCONTEXT_URL:-https://geocontext.kartoza.com}
+      - GEOSERVER_LOCATION=http://geoserver/geoserver/
+      - GEOSERVER_LOCATION_SITE_LAYER=bims:location_site_view
+      - GEOSERVER_PUBLIC_LOCATION=http://django-bims.test/geoserver/
+      - MEDIA_ROOT=/home/web/media
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - ROOT_URLCONF=core.urls
+      - SITEURL=http://localhost:63307/
+      - STATIC_ROOT=/home/web/static/static
+      - VIRTUAL_HOST=bims.kartoza.com
+      - VIRTUAL_PORT=8080
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ../../django-bims:/home/web/django_project
+      - ./static:/home/web/static:rw
+      - ./media:/home/web/media:rw
+    hostname: worker
+    links:
+      - db:db
+      - cache:cache
+    command: celery worker --app=bims.celery:app -Q search -B -l debug
+
   dev:
     build:
       context: ../
