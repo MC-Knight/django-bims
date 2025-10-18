@@ -20,6 +20,11 @@ body {
     padding-bottom: 15px;
 }
 
+ #fish-map .ol-viewport {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 table td {
     vertical-align: middle !important;
 }

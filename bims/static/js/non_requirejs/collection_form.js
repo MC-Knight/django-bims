@@ -246,11 +246,13 @@ $(function () {
         }
     });
 
+    // ===== SIMPLE MAP - JUST LIKE VALIDATION PAGE =====
     let locationSiteCoordinate = ol.proj.transform([
             parseFloat(location_site_long),
             parseFloat(location_site_lat)],
         'EPSG:4326',
         'EPSG:3857');
+
     let markerStyle = new ol.style.Style({
         image: new ol.style.Icon(({
             anchor: [0.5, 46],
@@ -260,74 +262,31 @@ $(function () {
             src: '/static/img/map-marker.png'
         }))
     });
+
     let iconFeature = new ol.Feature({
         geometry: new ol.geom.Point(locationSiteCoordinate),
     });
     markerSource.addFeature(iconFeature);
-    const baseLayer = []
 
-    if(bingKey){
-        baseLayer.push(
-            new ol.layer.Tile({
-                source: new ol.source.BingMaps({
-                key: bingKey,
-                imagerySet: 'AerialWithLabels'
-            })
-            })
-        )
-    }
-    else {
-        baseLayer.push(
-            new ol.layer.Tile({
-                source: new ol.source.OSM()
-            })
-        )
-    }
-    baseLayer.push(
-        new ol.layer.Vector({
-            source: markerSource,
-            style: markerStyle,
-        }),
-    )
-
+    // Create map with OSM and marker
     map = new ol.Map({
         target: 'fish-map',
-        layers: baseLayer,
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            }),
+            new ol.layer.Vector({
+                source: markerSource,
+                style: markerStyle,
+            })
+        ],
         view: new ol.View({
             center: locationSiteCoordinate,
             zoom: 10
         })
     });
 
-    let options = {
-        url: 'https://maps.kartoza.com/geoserver/wms',
-        params: {
-            layers: 'kartoza:sa_rivers',
-            format: 'image/png'
-        }
-    };
-
-    let riverLayer = new ol.layer.Tile({
-        source: new ol.source.TileWMS(options)
-    });
-
-    map.addLayer(riverLayer);
-
-    let biodiversityLayersOptions = {
-        url: geoserverPublicUrl + 'wms',
-        params: {
-            LAYERS: locationSiteGeoserverLayer,
-            FORMAT: 'image/png8',
-            viewparams: 'where:' + defaultWMSSiteParameters
-        },
-        ratio: 1,
-        serverType: 'geoserver'
-    };
-    let biodiversitySource = new ol.source.ImageWMS(biodiversityLayersOptions);
-    let biodiversityTileLayer = new ol.layer.Image({
-        source: biodiversitySource
-    });
-    map.addLayer(biodiversityTileLayer);
+    console.log('Map created successfully');
 
     $("#date").datepicker({
         changeMonth: true,
@@ -505,9 +464,9 @@ function populateFindTaxonTable(table, data) {
         } else {
             stored = fontAwesomeIcon('times', 'red');
         }
-        let action = (`<button 
-                        type="button" 
-                        onclick="addNewTaxonToObservedList('${canonicalName}',${key},'${rank}',${taxaId})" 
+        let action = (`<button
+                        type="button"
+                        onclick="addNewTaxonToObservedList('${canonicalName}',${key},'${rank}',${taxaId})"
                         class="btn btn-success">${fontAwesomeIcon('plus')}&nbsp;ADD
                        </button>`);
         tableBody.append(`<tr>
