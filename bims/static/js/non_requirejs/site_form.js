@@ -80,43 +80,28 @@ let showSiteCodeError = function () {
 
 $(function () {
     $('body').append(modal);
-    let southAfrica = [2910598.850835484, -3326258.3640110902];
+
+    // ===== CHANGED: Center on Rwanda instead of South Africa =====
+    let rwandaCenter = ol.proj.fromLonLat([29.8739, -1.9403]); // Rwanda center
     let mapView = new ol.View({
-        center: southAfrica,
-        zoom: 5
+        center: rwandaCenter,
+        zoom: 8
     });
-    const baseLayer = [];
-    if(bingKey){
-        baseLayer.push(
-            new ol.layer.Tile({
-                source: new ol.source.BingMaps({
-                key: bingKey,
-                imagerySet: 'AerialWithLabels'
-            })
-            })
-        )
-    }
-    else {
-        baseLayer.push(
+
+    // ===== SIMPLIFIED: Just OSM base layer =====
+    map = new ol.Map({
+        target: 'site-map',
+        layers: [
             new ol.layer.Tile({
                 source: new ol.source.OSM()
             })
-        )
-    }
-
-    let extent = defaultExtentMap.split(',');
-    let newExtent = [];
-    for (let e = 0; e < extent.length; e++) {
-        newExtent.push(parseFloat(extent[e]));
-    }
-    extent = ol.proj.transformExtent(newExtent, 'EPSG:4326', 'EPSG:3857');
-
-    map = new ol.Map({
-        target: 'site-map',
-        layers: baseLayer,
+        ],
         view: mapView
     });
 
+    console.log('Map created successfully');
+
+    // Add rivers layer if FBIS
     if (isFbis) {
         let options = {
             url: 'https://maps.kartoza.com/geoserver/wms',
@@ -140,25 +125,38 @@ $(function () {
         updateCoordinate(false);
     });
 
-    map.getView().fit(extent);
+    // Fit to extent if available
+    if (defaultExtentMap) {
+        let extent = defaultExtentMap.split(',');
+        let newExtent = [];
+        for (let e = 0; e < extent.length; e++) {
+            newExtent.push(parseFloat(extent[e]));
+        }
+        extent = ol.proj.transformExtent(newExtent, 'EPSG:4326', 'EPSG:3857');
+        map.getView().fit(extent);
+    }
 
     $('[data-toggle="popover"]').popover();
 
-    let biodiversityLayersOptions = {
-        url: geoserverPublicUrl + 'wms',
-        params: {
-            LAYERS: locationSiteGeoserverLayer,
-            FORMAT: 'image/png8',
-            viewparams: 'where:' + defaultWMSSiteParameters
-        },
-        ratio: 1,
-        serverType: 'geoserver'
-    };
-    let biodiversitySource = new ol.source.ImageWMS(biodiversityLayersOptions);
-    let biodiversityTileLayer = new ol.layer.Image({
-        source: biodiversitySource
-    });
-    map.addLayer(biodiversityTileLayer);
+    // Add biodiversity layer if available
+    if (geoserverPublicUrl && locationSiteGeoserverLayer) {
+        let biodiversityLayersOptions = {
+            url: geoserverPublicUrl + 'wms',
+            params: {
+                LAYERS: locationSiteGeoserverLayer,
+                FORMAT: 'image/png8',
+                viewparams: 'where:' + defaultWMSSiteParameters
+            },
+            ratio: 1,
+            serverType: 'geoserver'
+        };
+        let biodiversitySource = new ol.source.ImageWMS(biodiversityLayersOptions);
+        let biodiversityTileLayer = new ol.layer.Image({
+            source: biodiversitySource
+        });
+        map.addLayer(biodiversityTileLayer);
+    }
+
     $('#update-coordinate').click(updateCoordinateHandler);
     $('#update-site-code').click(updateSiteCode);
     $('#fetch-river-name').click(fetchRiverName);
@@ -333,7 +331,7 @@ let moveMarkerOnTheMap = (lat, lon, zoomToMap = true) => {
     markerSource.addFeature(iconFeature);
     if (zoomToMap) {
         map.getView().setCenter(locationSiteCoordinate);
-        map.getView().setZoom(6);
+        map.getView().setZoom(10);
     }
 };
 
@@ -363,7 +361,7 @@ let addMarkerToMap = (lat, lon, zoomToMap = true) => {
     }));
     if (zoomToMap) {
         map.getView().setCenter(locationSiteCoordinate);
-        map.getView().setZoom(6);
+        map.getView().setZoom(10);
     }
     if (allowToEdit) {
         document.getElementById('update-site-code').disabled = false;
@@ -454,4 +452,4 @@ let checkSiteInCountry = (latitude, longitude, callback) => {
             }
         }
     });
-}
+};
