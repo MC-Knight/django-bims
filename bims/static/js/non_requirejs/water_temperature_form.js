@@ -1,4 +1,4 @@
-const baseLayer = []
+// ===== SIMPLE MAP INITIALIZATION - CENTERED ON RWANDA =====
 let markerSource = new ol.source.Vector();
 let markerStyle = new ol.style.Style({
     image: new ol.style.Icon(({
@@ -10,46 +10,43 @@ let markerStyle = new ol.style.Style({
     }))
 });
 
-if (bingKey) {
-    baseLayer.push(
-        new ol.layer.Tile({
-            source: new ol.source.BingMaps({
-                key: bingKey,
-                imagerySet: 'AerialWithLabels'
-            })
-        })
-    )
-} else {
-    baseLayer.push(
-        new ol.layer.Tile({
-            source: new ol.source.OSM()
-        })
-    )
-}
-baseLayer.push(
-    new ol.layer.Vector({
-        source: markerSource,
-        style: markerStyle,
-    }),
-)
-let locationSiteCoordinate = ol.proj.transform([
-        parseFloat(location_site_long),
-        parseFloat(location_site_lat)],
+// Set default coordinates if missing
+let lat = parseFloat(location_site_lat) || -1.9403;  // Rwanda center
+let lon = parseFloat(location_site_long) || 29.8739;
+
+let locationSiteCoordinate = ol.proj.transform(
+    [lon, lat],
     'EPSG:4326',
-    'EPSG:3857');
+    'EPSG:3857'
+);
+
+// Create map with OSM and marker layer
 let map = new ol.Map({
     target: 'map',
-    layers: baseLayer,
+    layers: [
+        new ol.layer.Tile({
+            source: new ol.source.OSM()
+        }),
+        new ol.layer.Vector({
+            source: markerSource,
+            style: markerStyle,
+        })
+    ],
     view: new ol.View({
         center: locationSiteCoordinate,
         zoom: 10
     })
 });
+
+// Add marker to map
 let iconFeature = new ol.Feature({
     geometry: new ol.geom.Point(locationSiteCoordinate),
 });
 markerSource.addFeature(iconFeature);
 
+console.log('Map created successfully at:', lat, lon);
+
+// ===== REST OF YOUR CODE =====
 let alertError = $('.alert-danger');
 let alertSuccess = $('.alert-success');
 let loading = $('.loading');
