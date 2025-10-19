@@ -150,7 +150,7 @@ define(['backbone', 'ol', 'shared'], function (Backbone, ol, Shared) {
                 result_html += (`<div class="${style_class}">
                                  <div class="fbis-rpanel-block-text">
                                  ${temp_key}</div></div>`)
-                
+
             };
             result_html += '</div>';
             return result_html;

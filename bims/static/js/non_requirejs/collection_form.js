@@ -286,7 +286,6 @@ $(function () {
         })
     });
 
-    console.log('Map created successfully');
 
     $("#date").datepicker({
         changeMonth: true,

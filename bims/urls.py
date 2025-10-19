@@ -265,7 +265,7 @@ urlpatterns = [
         r'^account/moderation_sent/(?P<inactive_user>[^/]*)$',
         moderator_contacted,
         name='moderator_contacted'),
-    
+
     # RBIS Mods
     url(r'^biodiversity-threats/$', biodiversity_threats_view,
         name='biodiversity-threats'),

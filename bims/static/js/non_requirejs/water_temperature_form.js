@@ -44,7 +44,6 @@ let iconFeature = new ol.Feature({
 });
 markerSource.addFeature(iconFeature);
 
-console.log('Map created successfully at:', lat, lon);
 
 // ===== REST OF YOUR CODE =====
 let alertError = $('.alert-danger');
