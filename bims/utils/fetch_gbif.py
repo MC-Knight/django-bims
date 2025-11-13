@@ -78,7 +78,18 @@ def merge_taxa_data(gbif_key='', excluded_taxon=None, taxa_list=None):
 def fetch_gbif_vernacular_names(taxonomy: Taxonomy):
     if not taxonomy.gbif_key:
         return False
-    vernacular_names = get_vernacular_names(taxonomy.gbif_key)
+
+
+    try:
+        vernacular_names = get_vernacular_names(taxonomy.gbif_key)
+    except Exception as e:
+        logger.warning(
+            f'Failed to fetch vernacular names from GBIF for '
+            f'{taxonomy.canonical_name} (GBIF key: {taxonomy.gbif_key}): {e}'
+        )
+        return False
+
+
     if vernacular_names:
         print('Found %s vernacular names' % len(
             vernacular_names['results']))

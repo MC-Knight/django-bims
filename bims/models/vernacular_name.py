@@ -30,5 +30,15 @@ class VernacularName(models.Model):
         null=True
     )
 
+    is_upload = models.BooleanField(
+        default=False,
+        null=False
+    )
+
+    order = models.IntegerField(
+        blank=True,
+        null=True
+    )
+
     def __str__(self):
         return self.name

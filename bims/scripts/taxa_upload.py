@@ -43,11 +43,12 @@ class TaxaProcessor(object):
             return None
         try:
             endemism_obj, _ = Endemism.objects.get_or_create(
-                name=endemism_value
-            )
+            name=endemism_value,
+            defaults={'verified': False}
+        )
         except Endemism.MultipleObjectsReturned:
             endemism_obj = Endemism.objects.filter(
-                name=endemism_value
+                name=endemism_value,
             )[0]
         return endemism_obj
 
