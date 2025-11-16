@@ -108,30 +108,6 @@ class ModuleSummary(APIView):
                     updated_summary[iucn_category[key]] = summary_temp[key]
             summary['conservation-status'] = updated_summary
 
-        # FAST: Only counts for taxonomy hierarchy
-        # from bims.enums.taxonomic_rank import TaxonomicRank
-
-        # unique_taxonomy_ids = collections.values_list('taxonomy', flat=True).distinct()
-        # taxonomies = Taxonomy.objects.filter(id__in=unique_taxonomy_ids)
-
-        # Collect unique names efficiently
-        # order_names = set()
-        # family_names = set()
-        # species_count = 0
-
-        # for taxonomy in taxonomies:
-        #     if taxonomy.order_name:
-        #         order_names.add(taxonomy.order_name)
-        #     if taxonomy.family_name:
-        #         family_names.add(taxonomy.family_name)
-        #     if taxonomy.rank in [TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]:
-        #         species_count += 1
-
-        # # ADD: Include taxon group ID for reference
-        # summary['orders'] = {'total': len(order_names)}
-        # summary['families'] = {'total': len(family_names)}
-        # summary['species'] = {'total': species_count}
-
         # Existing summary data
         summary['taxon_group_id'] = taxon_group.id
         if taxon_group.logo:
@@ -249,9 +225,9 @@ class TaxonGroupOrdersAPIView(APIView):
                         'scientific_name': order_taxonomy.scientific_name if order_taxonomy else order_name
                     }
 
-        # Convert to list and sort
+        # Convert to list and sort alphabetically (case-insensitive)
         orders_list = list(orders_data.values())
-        orders_list.sort(key=lambda x: x['name'])
+        orders_list.sort(key=lambda x: x['name'].lower())
 
         # Apply pagination
         total = len(orders_list)
@@ -305,9 +281,9 @@ class TaxonGroupFamiliesAPIView(APIView):
                         'order_name': taxonomy.order_name
                     }
 
-        # Convert to list and sort
+        # Convert to list and sort alphabetically (case-insensitive)
         families_list = list(families_data.values())
-        families_list.sort(key=lambda x: x['name'])
+        families_list.sort(key=lambda x: x['name'].lower())
 
         # Apply pagination
         total = len(families_list)
@@ -347,9 +323,7 @@ class TaxonGroupSpeciesAPIView(APIView):
         from bims.enums.taxonomic_rank import TaxonomicRank
 
         # FIX: Query taxonomies directly from the taxon group
-        species_taxonomies = taxon_group.taxonomies.filter(
-            rank__in=[TaxonomicRank.SPECIES.name, TaxonomicRank.SUBSPECIES.name]
-        )
+        species_taxonomies = taxon_group.taxonomies.all()
 
         # Apply search filter
         if search:
@@ -357,6 +331,9 @@ class TaxonGroupSpeciesAPIView(APIView):
                 Q(canonical_name__icontains=search) |
                 Q(scientific_name__icontains=search)
             )
+
+        # IMPORTANT: Order alphabetically by canonical_name or scientific_name (case-insensitive)
+        species_taxonomies = species_taxonomies.order_by('canonical_name', 'scientific_name')
 
         # Get total count before pagination
         total = species_taxonomies.count()

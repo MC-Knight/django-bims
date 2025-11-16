@@ -15,10 +15,39 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Search Bar -->
+                <div class="mb-3">
+                    <input type="text" id="taxonomySearch" class="form-control" placeholder="Search...">
+                </div>
+
                 <div id="modalContent">
                     <div class="text-center">
                         <i class="fa fa-spinner fa-spin fa-2x"></i>
                         <p>Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div id="paginationControls" class="mt-3" style="display: none;">
+                    <nav aria-label="Taxonomy pagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" id="prevPage">
+                                <a class="page-link" href="#" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item active">
+                                <span class="page-link" id="currentPageInfo">Page 1</span>
+                            </li>
+                            <li class="page-item" id="nextPage">
+                                <a class="page-link" href="#" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="text-center">
+                        <small id="paginationInfo" class="text-muted"></small>
                     </div>
                 </div>
             </div>
@@ -105,9 +134,29 @@
     border-radius: 5px;
     margin-bottom: 20px;
 }
+
+.pagination .page-link {
+    cursor: pointer;
+}
+
+.pagination .page-item.disabled .page-link {
+    cursor: not-allowed;
+}
 </style>
 
 <script>
+    // Global variables for pagination state
+    let currentModalState = {
+        taxonGroupId: null,
+        type: null,
+        typeName: null,
+        moduleName: null,
+        currentPage: 1,
+        pageSize: 50,
+        searchQuery: '',
+        searchTimeout: null
+    };
+
     function getNumberWithCommas(number) {
         try {
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -132,7 +181,7 @@
     function getConservationStatusClass(status) {
         const statusMap = {
             'LC': 'status-lc',
-            'NT': 'status-nt', 
+            'NT': 'status-nt',
             'VU': 'status-vu',
             'EN': 'status-en',
             'CR': 'status-cr',
@@ -150,17 +199,23 @@
     }
 
     function showTaxonomyPopup(taxonGroupId, type, typeName, moduleName) {
-        const typeMap = {
-            'species': '/api/taxon-group-species/',
-            'families': '/api/taxon-group-families/', 
-            'orders': '/api/taxon-group-orders/'
+        // Store modal state
+        currentModalState = {
+            taxonGroupId: taxonGroupId,
+            type: type,
+            typeName: typeName,
+            moduleName: moduleName,
+            currentPage: 1,
+            pageSize: 50,
+            searchQuery: ''
         };
-        
-        const endpoint = typeMap[type] + taxonGroupId + '/';
-        
+
         // Set modal title
         $('#taxonomyModalLabel').text(`${typeName} - ${moduleName}`);
-        
+
+        // Clear and reset search
+        $('#taxonomySearch').val('');
+
         // Show loading state
         $('#modalContent').html(`
             <div class="text-center">
@@ -168,41 +223,70 @@
                 <p>Loading ${type}...</p>
             </div>
         `);
-        
+
+        // Hide pagination initially
+        $('#paginationControls').hide();
+
         // Show modal
         $('#taxonomyModal').modal('show');
-        
+
+        // Load first page
+        loadTaxonomyData();
+    }
+
+    function loadTaxonomyData() {
+        const typeMap = {
+            'species': '/api/taxon-group-species/',
+            'families': '/api/taxon-group-families/',
+            'orders': '/api/taxon-group-orders/'
+        };
+
+        const endpoint = typeMap[currentModalState.type] + currentModalState.taxonGroupId + '/';
+
+        // Build query parameters
+        const params = {
+            page: currentModalState.currentPage,
+            page_size: currentModalState.pageSize
+        };
+
+        if (currentModalState.searchQuery) {
+            params.search = currentModalState.searchQuery;
+        }
+
         // Fetch data
-        $.get(endpoint)
+        $.get(endpoint, params)
             .then(function(data) {
-                renderTaxonomyData(data, type);
+                renderTaxonomyData(data);
+                updatePaginationControls(data);
             })
             .catch(function(error) {
                 console.error('Error loading taxonomy data:', error);
                 $('#modalContent').html(`
                     <div class="alert alert-danger">
                         <h5>Error Loading Data</h5>
-                        <p>Failed to load ${type} data. Please try again later.</p>
+                        <p>Failed to load ${currentModalState.type} data. Please try again later.</p>
                     </div>
                 `);
+                $('#paginationControls').hide();
             });
     }
 
-    function renderTaxonomyData(data, type) {
+    function renderTaxonomyData(data) {
         if (!data || !data.data || data.data.length === 0) {
             $('#modalContent').html(`
                 <div class="alert alert-info">
                     <h5>No Data Available</h5>
-                    <p>No ${type} data found.</p>
+                    <p>No ${currentModalState.type} found${currentModalState.searchQuery ? ' matching your search' : ''}.</p>
                 </div>
             `);
+            $('#paginationControls').hide();
             return;
         }
 
         let content = `
             <div class="taxonomy-summary">
                 <h6>${data.taxon_group_name}</h6>
-                <p><strong>Total ${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${data.total}</p>
+                <p><strong>Total ${currentModalState.typeName}:</strong> ${getNumberWithCommas(data.total)}</p>
             </div>
             <div class="taxonomy-list">
         `;
@@ -210,42 +294,100 @@
         data.data.forEach(item => {
             content += '<div class="taxonomy-item">';
             content += `<div class="taxonomy-name">${item.name}</div>`;
-            
+
             if (item.scientific_name && item.scientific_name !== item.name) {
                 content += `<div class="taxonomy-scientific">${item.scientific_name}</div>`;
             }
-            
+
             let metaInfo = [];
-            
+
             if (item.family_name) {
                 metaInfo.push(`Family: ${item.family_name}`);
             }
-            
+
             if (item.order_name) {
                 metaInfo.push(`Order: ${item.order_name}`);
             }
-            
+
             if (item.conservation_status) {
                 const statusClass = getConservationStatusClass(item.conservation_status);
                 metaInfo.push(`<span class="conservation-status ${statusClass}">${item.conservation_status}</span>`);
             }
-            
+
             if (item.origin) {
                 const originClass = getOriginClass(item.origin);
                 metaInfo.push(`<span class="${originClass}">${item.origin}</span>`);
             }
-            
+
             if (metaInfo.length > 0) {
                 content += `<div class="taxonomy-meta">${metaInfo.join(' • ')}</div>`;
             }
-            
+
             content += '</div>';
         });
 
         content += '</div>';
-        
+
         $('#modalContent').html(content);
     }
+
+    function updatePaginationControls(data) {
+        if (data.total === 0) {
+            $('#paginationControls').hide();
+            return;
+        }
+
+        $('#paginationControls').show();
+
+        // Update current page info
+        const start = (data.page - 1) * data.page_size + 1;
+        const end = Math.min(data.page * data.page_size, data.total);
+        $('#currentPageInfo').text(`Page ${data.page}`);
+        $('#paginationInfo').text(`Showing ${start}-${end} of ${getNumberWithCommas(data.total)} ${currentModalState.typeName.toLowerCase()}`);
+
+        // Update previous button
+        if (data.has_previous) {
+            $('#prevPage').removeClass('disabled');
+            $('#prevPage a').off('click').on('click', function(e) {
+                e.preventDefault();
+                currentModalState.currentPage--;
+                loadTaxonomyData();
+            });
+        } else {
+            $('#prevPage').addClass('disabled');
+            $('#prevPage a').off('click');
+        }
+
+        // Update next button
+        if (data.has_next) {
+            $('#nextPage').removeClass('disabled');
+            $('#nextPage a').off('click').on('click', function(e) {
+                e.preventDefault();
+                currentModalState.currentPage++;
+                loadTaxonomyData();
+            });
+        } else {
+            $('#nextPage').addClass('disabled');
+            $('#nextPage a').off('click');
+        }
+    }
+
+    // Search functionality with debounce
+    $('#taxonomySearch').on('input', function() {
+        const searchValue = $(this).val();
+
+        // Clear existing timeout
+        if (currentModalState.searchTimeout) {
+            clearTimeout(currentModalState.searchTimeout);
+        }
+
+        // Set new timeout
+        currentModalState.searchTimeout = setTimeout(function() {
+            currentModalState.searchQuery = searchValue;
+            currentModalState.currentPage = 1; // Reset to first page on search
+            loadTaxonomyData();
+        }, 500); // Wait 500ms after user stops typing
+    });
 
     function createModuleCharts(moduleData, moduleName, container) {
         if (!moduleData) {
@@ -350,13 +492,13 @@
         let $moduleInfoContainer = $(`<div class="module-info-container"/>`);
 
         $moduleInfoContainer.append(
-            `<a 
+            `<a
                 style="margin-bottom: 0; font-size: 1em; cursor: pointer;
                 color: #00697d;
                 text-decoration: none;
                 transition: color 0.2s;
                 background: none;
-                border: none;" 
+                border: none;"
                 href="/map/#search//taxon=&search=&siteId=&collector=&category=&yearFrom=&yearTo=&months=&boundary=&userBoundary=&referenceCategory=&spatialFilter=&reference=&endemic=&conservationStatus=[]&modules=${moduleId}&validated=&sourceCollection=&abioticData=&ecologicalCategory=&rank=&siteIdOpen=&orderBy=name&polygon=&thermalModule=&dst="><span class="module-numbers">${getNumberWithCommas(totalRecords)}</span> Occurrence Records</a>`
         )
 
@@ -392,7 +534,7 @@
                 $('.module-loading').hide();
                 const $container = $('.summary-data');
                  if(data && Object.keys(data).length > 0){
-                    $.each(data, function(key, summaryData) {                  
+                    $.each(data, function(key, summaryData) {
                         let _container = $(`<div class="col-lg-2 col-md-8 col-sm-8 module-container"></div>`);
                         $container.append(_container);
                         createModuleCharts(
@@ -414,7 +556,7 @@
             { label: 'Families', type: 'families', id: `families-${taxonGroupId}` },
             { label: 'Species', type: 'species', id: `species-${taxonGroupId}` }
         ];
-        
+
         if (!$('#loading-pulse-css').length) {
             $('head').append(`
                 <style id="loading-pulse-css">
@@ -428,7 +570,7 @@
                         width: 60px;
                         vertical-align: middle;
                     }
-                    
+
                     @keyframes pulse {
                         0% { background-position: 0% 0%; }
                         100% { background-position: -200% 0%; }
@@ -436,7 +578,7 @@
                 </style>
             `);
         }
-        
+
         orderedItems.forEach(item => {
             const placeholderElement = $(`
                 <p class="module-info" style="margin-bottom: 0; font-size: 1em" id="${item.id}">
@@ -445,34 +587,34 @@
             `);
             container.append(placeholderElement);
         });
-        
-       
+
+
         const requests = [
             { endpoint: `/api/taxon-group-species/${taxonGroupId}/`, label: 'Species', type: 'species' },
             { endpoint: `/api/taxon-group-families/${taxonGroupId}/`, label: 'Families', type: 'families' },
             { endpoint: `/api/taxon-group-orders/${taxonGroupId}/`, label: 'Orders', type: 'orders' }
         ];
-        
-       
+
+
         requests.forEach(request => {
             $.get(request.endpoint)
                 .then(function(data) {
                     const targetId = `${request.type}-${taxonGroupId}`;
                     const total = data && data.total ? data.total : 0;
-                    
-                    
-                    const clickableCount = `<span class="module-numbers clickable-count" 
+
+
+                    const clickableCount = `<span class="module-numbers clickable-count"
                         onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
                         title="Click to view details">
                         ${getNumberWithCommas(total)} ${request.label}
                     </span>`;
-                    
+
                     $(`#${targetId}`).html(clickableCount);
                 })
                 .catch(function(error) {
                     console.error(`Error loading total ${request.type}:`, error);
                     const targetId = `${request.type}-${taxonGroupId}`;
-                    const clickableCount = `<span class="module-numbers clickable-count" 
+                    const clickableCount = `<span class="module-numbers clickable-count"
                         onclick="showTaxonomyPopup('${taxonGroupId}', '${request.type}', '${request.label}', '${moduleName}')"
                         title="Click to view details">
                         0 ${request.label}

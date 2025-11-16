@@ -128,33 +128,47 @@ def create_or_update_taxonomy(
     :param fetch_vernacular_names: should fetch vernacular names
     """
     taxa = None
-    try:
+
+    # FIX: Better error handling for missing keys
+    species_key = None
+    if 'nubKey' in gbif_data:
         species_key = gbif_data['nubKey']
-    except KeyError:
+    elif 'key' in gbif_data:
         species_key = gbif_data['key']
+    else:
+        logger.error(f'No nubKey or key found in GBIF data for: {gbif_data.get("scientificName", "unknown")}')
+        logger.debug(f'Available keys in gbif_data: {list(gbif_data.keys())}')
+        return None
+
     try:
         rank = TaxonomicRank[gbif_data['rank']].name
     except KeyError:
-        logger.error('No RANK')
+        logger.error(f'No RANK found in GBIF data for: {gbif_data.get("scientificName", "unknown")}')
         return None
+
     if 'scientificName' not in gbif_data:
-        logger.error('No scientificName')
+        logger.error(f'No scientificName in GBIF data. Available keys: {list(gbif_data.keys())}')
         return None
+
     if 'canonicalName' not in gbif_data:
-        logger.error('No canonicalName')
+        logger.error(f'No canonicalName for {gbif_data.get("scientificName", "unknown")}')
         return None
+
     canonical_name = gbif_data['canonicalName']
     scientific_name = gbif_data['scientificName']
     taxonomic_status = ''
+
     if 'taxonomicStatus' in gbif_data:
         taxonomic_status = gbif_data['taxonomicStatus']
     elif 'status' in gbif_data:
         taxonomic_status = gbif_data['status']
+
     try:
         taxonomic_status = TaxonomicStatus[
             taxonomic_status].name
     except KeyError:
         taxonomic_status = ''
+
     if 'oldKey' in gbif_data:
         taxa = Taxonomy.objects.filter(
             gbif_key=gbif_data['oldKey']
@@ -170,6 +184,7 @@ def create_or_update_taxonomy(
             taxonomic_status=taxonomic_status,
             rank=rank,
         )
+
     if not taxa.exists():
         taxonomy = Taxonomy.objects.create(
             scientific_name=scientific_name,
@@ -185,13 +200,16 @@ def create_or_update_taxonomy(
             rank=rank,
         )
         taxonomy = taxa[0]
+
     if 'authorship' in gbif_data:
         taxonomy.author = gbif_data['authorship']
+
     taxonomy.gbif_key = species_key
     taxonomy.gbif_data = gbif_data
 
     if fetch_vernacular_names:
         fetch_gbif_vernacular_names(taxonomy)
+
     taxonomy.save()
     return taxonomy
 
@@ -273,13 +291,14 @@ def fetch_all_species_from_gbif(
                 gbif_key = int(gbif_key)
             temp_key = gbif_key
         else:
-            temp_key = species_data['key']
+            temp_key = species_data.get('key')
+
         if 'nubKey' in species_data:
             nub_key = species_data['nubKey']
             if nub_key != temp_key:
                 old_key = nub_key
                 new_species_data = get_species(nub_key)
-                if new_species_data['rank'].upper() == taxonomic_rank.upper():
+                if new_species_data and taxonomic_rank and new_species_data.get('rank', '').upper() == taxonomic_rank.upper():
                     species_data = new_species_data
                     species_data['oldKey'] = old_key
         else:
@@ -288,8 +307,9 @@ def fetch_all_species_from_gbif(
                 if old_key != species_data[rank_key]:
                     new_species_data = get_species(species_data[rank_key])
                     if (
-                            new_species_data[
-                                'rank'].upper() == taxonomic_rank.upper()
+                            new_species_data and
+                            taxonomic_rank and
+                            new_species_data.get('rank', '').upper() == taxonomic_rank.upper()
                     ):
                         species_data = new_species_data
                         species_data['oldKey'] = old_key
@@ -297,10 +317,12 @@ def fetch_all_species_from_gbif(
     logger.debug(species_data)
     if not species_data:
         return None
+
     taxonomy = create_or_update_taxonomy(species_data, fetch_vernacular_names)
     if not taxonomy:
-        logger.error('Taxonomy not updated/created')
+        logger.error(f'Taxonomy not updated/created for: {species_data.get("scientificName", "unknown")}')
         return None
+
     species_key = taxonomy.gbif_key
     scientific_name = taxonomy.scientific_name
 
@@ -326,7 +348,7 @@ def fetch_all_species_from_gbif(
     # Check if there is an accepted key
     if (
         'acceptedKey' in species_data and
-        species_data['taxonomicStatus'] == 'SYNONYM'
+        species_data.get('taxonomicStatus') == 'SYNONYM'
     ):
         accepted_taxonomy = fetch_all_species_from_gbif(
             gbif_key=species_data['acceptedKey'],
@@ -358,13 +380,19 @@ def fetch_all_species_from_gbif(
         if not children:
             return taxonomy
         for child in children:
-            try:
+            # FIX: Better error handling for missing keys in children
+            children_key = None
+            if 'nubKey' in child:
                 children_key = child['nubKey']
-            except KeyError:
+            elif 'key' in child:
                 children_key = child['key']
+            else:
+                logger.warning(f'No nubKey or key found for child: {child.get("scientificName", "unknown")}')
+                continue
+
             fetch_all_species_from_gbif(
                 gbif_key=children_key,
-                species=child['scientificName'],
+                species=child.get('scientificName', ''),
                 parent=taxonomy
             )
         return taxonomy
