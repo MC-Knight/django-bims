@@ -101,7 +101,7 @@ define([
             });
 
             let biodiversityLayersOptions = {
-                url: geoserverPublicUrl + 'wms',
+                url: '/bims_proxy/'+ geoserverPublicUrl + '/wms?',
                 params: {
                     LAYERS: locationSiteGeoserverLayer,
                     FORMAT: 'image/png8',
@@ -1580,9 +1580,9 @@ define([
                 $container.addClass('card-100');
                 $container.addClass('grid-stack-item-content');
                 let $div = $(`<div class="grid-stack-item" data-gs-x="${configuration['x']}" data-gs-y="${configuration['y']}"
-                                    data-gs-width="${configuration['width']}" 
-                                    data-gs-height="${configuration['height']}" 
-                                    data-gs-min-width="${configuration['width']}" 
+                                    data-gs-width="${configuration['width']}"
+                                    data-gs-height="${configuration['height']}"
+                                    data-gs-min-width="${configuration['width']}"
                                     data-gs-max-width="12" data-key="${configuration['key']}">
                             </div>`);
                 $div.append($container);

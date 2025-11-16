@@ -1111,17 +1111,12 @@ define([
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
-                viewparams: 'where:"' + query + '"'
+                viewparams: 'where:"' + query + '"',
+                t: new Date().getTime()  // Cache buster to force new tiles from GeoServer
             };
             this.layers.biodiversitySource.updateParams(newParams);
-
-            // Force the layer to refresh by triggering a change event
-            this.layers.biodiversityTileLayer.getSource().changed();
-
-            // Also trigger a map render to ensure immediate visual update
-            this.map.render();
-
-            console.log('Biodiversity layer updated and refreshed');
+            this.layers.biodiversitySource.refresh();  // Force refresh to fetch new tiles
+            console.log('Biodiversity layer updated with new query');
         },
 
         clearAllLayers: function () {
@@ -1129,11 +1124,11 @@ define([
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
-                viewparams: 'where:' + emptyWMSSiteParameter
+                viewparams: 'where:' + emptyWMSSiteParameter,
+                t: new Date().getTime()
             };
             this.layers.biodiversitySource.updateParams(newParams);
-            this.layers.biodiversityTileLayer.getSource().changed();
-            this.map.render();
+            this.layers.biodiversitySource.refresh();
         },
 
         resetSitesLayer: function () {
@@ -1141,11 +1136,11 @@ define([
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
-                viewparams: 'where:' + defaultWMSSiteParameters
+                viewparams: 'where:' + defaultWMSSiteParameters,
+                t: new Date().getTime()
             };
             this.layers.biodiversitySource.updateParams(newParams);
-            this.layers.biodiversityTileLayer.getSource().changed();
-            this.map.render();
+            this.layers.biodiversitySource.refresh();
         },
 
         toggleMapInteraction: function (enabled) {

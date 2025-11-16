@@ -52,7 +52,7 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
             this.metadataTableList = this.$el.find('#metadata-table-list-taxon');
 
             let biodiversityLayersOptions = {
-                url: geoserverPublicUrl + 'wms',
+                url: '/bims_proxy/'+ geoserverPublicUrl + '/wms?',
                 params: {
                     LAYERS: locationSiteGeoserverLayer,
                     FORMAT: 'image/png8',
