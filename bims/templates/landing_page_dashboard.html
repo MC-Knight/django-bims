@@ -154,7 +154,8 @@
         currentPage: 1,
         pageSize: 50,
         searchQuery: '',
-        searchTimeout: null
+        searchTimeout: null,
+        iucnStatus: ''
     };
 
     function getNumberWithCommas(number) {
@@ -165,7 +166,7 @@
         }
     }
 
-    function createDonutGraph(container, data) {
+    function createDonutGraph(container, data, moduleId, moduleName) {
         let donutChart = new Chart(container, {
             type: 'doughnut',
             data: data,
@@ -174,6 +175,31 @@
                 legend: {
                     display: false
                 },
+                onClick: function(evt, item) {
+                    if (item.length > 0) {
+                        const index = item[0]._index;
+                        const label = data.labels[index];
+                        // Map label to IUCN status code
+                        const statusMap = {
+                            'Data deficient': 'DD',
+                            'Not evaluated': 'NE',
+                            'Least concern': 'LC',
+                            'Near threatened': 'NT',
+                            'Vulnerable': 'VU',
+                            'Endangered': 'EN',
+                            'Critically endangered': 'CR'
+                        };
+                        const statusCode = statusMap[label] || label;
+                        showTaxonomyPopup(moduleId, 'species', 'Species', moduleName, statusCode);
+                    }
+                },
+                tooltips: {
+                    callbacks: {
+                        afterLabel: function() {
+                            return 'Click to view species';
+                        }
+                    }
+                }
             }
         });
     }
@@ -198,7 +224,7 @@
         return '';
     }
 
-    function showTaxonomyPopup(taxonGroupId, type, typeName, moduleName) {
+    function showTaxonomyPopup(taxonGroupId, type, typeName, moduleName, iucnStatus = '') {
         // Store modal state
         currentModalState = {
             taxonGroupId: taxonGroupId,
@@ -207,11 +233,16 @@
             moduleName: moduleName,
             currentPage: 1,
             pageSize: 50,
-            searchQuery: ''
+            searchQuery: '',
+            iucnStatus: iucnStatus
         };
 
         // Set modal title
-        $('#taxonomyModalLabel').text(`${typeName} - ${moduleName}`);
+        let modalTitle = `${typeName} - ${moduleName}`;
+        if (iucnStatus) {
+            modalTitle += ` (${iucnStatus})`;
+        }
+        $('#taxonomyModalLabel').text(modalTitle);
 
         // Clear and reset search
         $('#taxonomySearch').val('');
@@ -251,6 +282,10 @@
 
         if (currentModalState.searchQuery) {
             params.search = currentModalState.searchQuery;
+        }
+
+        if (currentModalState.iucnStatus) {
+            params.iucn_status = currentModalState.iucnStatus;
         }
 
         // Fetch data
@@ -525,7 +560,7 @@
                 borderWidth: 1
             }]
         };
-        createDonutGraph(moduleContainer, createSummaryChart(moduleData))
+        createDonutGraph(moduleContainer, createSummaryChart(moduleData), moduleId, moduleName)
     }
 
     if (showModuleSummaries) {

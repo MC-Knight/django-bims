@@ -92,20 +92,39 @@ class ModuleSummary(APIView):
             )
             summary['total_sass'] = SiteVisit.objects.all().count()
         else:
+            # Get unique taxonomies for this taxon group
+            unique_taxonomies = collections.values_list('taxonomy', flat=True).distinct()
+
+            # Query taxonomies directly instead of collections
+            from bims.models.taxonomy import Taxonomy
+
             summary_temp = dict(
-                collections.exclude(taxonomy__origin__exact='').annotate(
-                    value=Case(When(taxonomy__iucn_status__isnull=False,
-                                    then=F('taxonomy__iucn_status__category')),
-                            default=Value('Not evaluated'))
+                Taxonomy.objects.filter(
+                    id__in=unique_taxonomies
+                ).exclude(
+                    origin__exact=''
+                ).annotate(
+                    value=Case(
+                        When(iucn_status__isnull=False, then=F('iucn_status__category')),
+                        default=Value('Not evaluated')
+                    )
                 ).values('value').annotate(
                     count=Count('value')
                 ).values_list('value', 'count')
             )
+
             iucn_category = dict(IUCNStatus.CATEGORY_CHOICES)
             updated_summary = {}
+
+            # Initialize all IUCN statuses with count 0
+            for category_code, category_name in IUCNStatus.CATEGORY_CHOICES:
+                updated_summary[category_name] = 0
+
+            # Update with actual counts
             for key in summary_temp.keys():
                 if key in iucn_category:
                     updated_summary[iucn_category[key]] = summary_temp[key]
+
             summary['conservation-status'] = updated_summary
 
         # Existing summary data
@@ -319,6 +338,7 @@ class TaxonGroupSpeciesAPIView(APIView):
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         search = request.GET.get('search', '')
+        iucn_status = request.GET.get('iucn_status', '')
 
         from bims.enums.taxonomic_rank import TaxonomicRank
 
@@ -331,6 +351,15 @@ class TaxonGroupSpeciesAPIView(APIView):
                 Q(canonical_name__icontains=search) |
                 Q(scientific_name__icontains=search)
             )
+
+        # Apply IUCN status filter
+        if iucn_status:
+            if iucn_status.upper() == 'NE' or iucn_status.lower() == 'not evaluated':
+                # Filter for species without IUCN status (Not evaluated)
+                species_taxonomies = species_taxonomies.filter(iucn_status__isnull=True)
+            else:
+                # Filter by specific IUCN status category
+                species_taxonomies = species_taxonomies.filter(iucn_status__category=iucn_status.upper())
 
         # IMPORTANT: Order alphabetically by canonical_name or scientific_name (case-insensitive)
         species_taxonomies = species_taxonomies.order_by('canonical_name', 'scientific_name')
