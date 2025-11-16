@@ -49,6 +49,7 @@ define([
         activeXHRRequests: [],
         lastMapMoveTime: 0,
         tileMonitoringEnabled: false,
+        currentFilteredSiteIds: [],  // Track currently visible site IDs from search results
 
         events: {
             'click .zoom-in': 'zoomInMap',
@@ -147,6 +148,8 @@ define([
             Shared.Dispatcher.on('map:switchHighlightPinned', this.switchHighlightPinned, this);
             Shared.Dispatcher.on('map:closeHighlightPinned', this.closeHighlightPinned, this);
             Shared.Dispatcher.on('map:zoomToHighlightPinnedFeatures', this.zoomToHighlightPinnedFeatures, this);
+            Shared.Dispatcher.on('map:filterPinnedSites', this.filterPinnedSitesByCurrentFilters, this);
+            Shared.Dispatcher.on('map:updateFilteredSiteIds', this.updateFilteredSiteIds, this);
 
             this.featureEventsRegistered = true;
         },
@@ -991,6 +994,98 @@ define([
             }
         },
 
+        filterPinnedSitesByCurrentFilters: function () {
+            var self = this;
+            if (!this.layers.highlightPinnedVectorSource) {
+                console.log('No highlightPinnedVectorSource');
+                return;
+            }
+
+            var allFeatures = this.layers.highlightPinnedVectorSource.getFeatures();
+            console.log('Total pinned features:', allFeatures.length);
+            console.log('Current filtered site IDs:', this.currentFilteredSiteIds);
+            console.log('Has active filters:', this.hasActiveFilters());
+
+            // If no filters are applied, keep all pinned sites
+            if (!this.hasActiveFilters()) {
+                console.log('No active filters - keeping all pinned sites');
+                return;
+            }
+
+            // Remove pinned sites that are not in the current filtered results
+            var featuresToRemove = [];
+            this.layers.highlightPinnedVectorSource.getFeatures().forEach(function (feature) {
+                var featureId = feature.get('id');
+                console.log('Checking feature with ID:', featureId, 'Type:', typeof featureId);
+
+                if (!featureId) {
+                    console.log('Feature has no ID - skipping');
+                    return;
+                }
+
+                // Note: Administrative boundary features (starting with 'adminArea-') will also be filtered
+                // They will be removed if no sites match the current filters
+
+                // Check if this site ID is in the current filtered results
+                var featureIdNum = parseInt(featureId);
+                var featureIdStr = featureId.toString();
+                var isInFilteredResults = self.currentFilteredSiteIds.indexOf(featureIdNum) !== -1 ||
+                                         self.currentFilteredSiteIds.indexOf(featureIdStr) !== -1 ||
+                                         self.currentFilteredSiteIds.indexOf(featureId) !== -1;
+
+                console.log('Feature', featureId, 'in filtered results:', isInFilteredResults);
+
+                if (!isInFilteredResults) {
+                    console.log('Marking feature', featureId, 'for removal');
+                    featuresToRemove.push(feature);
+                }
+            });
+
+            console.log('Features to remove:', featuresToRemove.length);
+
+            // Remove features that don't match filters
+            featuresToRemove.forEach(function (feature) {
+                console.log('Removing feature:', feature.get('id'));
+                self.layers.highlightPinnedVectorSource.removeFeature(feature);
+            });
+        },
+
+        updateFilteredSiteIds: function (siteIds) {
+            console.log('Updating filtered site IDs:', siteIds);
+            // Update the list of currently visible site IDs
+            this.currentFilteredSiteIds = siteIds || [];
+            console.log('Stored site IDs:', this.currentFilteredSiteIds);
+
+            // Automatically filter pinned sites after updating IDs
+            this.filterPinnedSitesByCurrentFilters();
+        },
+
+        hasActiveFilters: function () {
+            // Check if any filters are currently active
+            return !(
+                !filterParameters['search'] &&
+                !filterParameters['collector'] &&
+                !filterParameters['validated'] &&
+                !filterParameters['category'] &&
+                !filterParameters['yearFrom'] &&
+                !filterParameters['yearTo'] &&
+                !filterParameters['userBoundary'] &&
+                !filterParameters['referenceCategory'] &&
+                !filterParameters['reference'] &&
+                !filterParameters['endemic'] &&
+                !filterParameters['modules'] &&
+                !filterParameters['conservationStatus'] &&
+                !filterParameters['spatialFilter'] &&
+                !filterParameters['ecologicalCategory'] &&
+                !filterParameters['sourceCollection'] &&
+                !filterParameters['abioticData'] &&
+                !filterParameters['polygon'] &&
+                !filterParameters['boundary'] &&
+                !filterParameters['dst'] &&
+                !filterParameters['thermalModule']
+            );
+        },
+
         showInfoPopup: function () {
             if (!hideBimsInfo && bimsInfoContent) {
                 $('#general-info-modal').fadeIn()
@@ -1010,6 +1105,7 @@ define([
         },
 
         updateBiodiversityLayerParams: function (query) {
+            console.log('Updating biodiversity layer with query:', query);
             query = query.replaceAll(',', '\\,');
             query = query.replaceAll(';', '\\;');
             let newParams = {
@@ -1018,24 +1114,38 @@ define([
                 viewparams: 'where:"' + query + '"'
             };
             this.layers.biodiversitySource.updateParams(newParams);
+
+            // Force the layer to refresh by triggering a change event
+            this.layers.biodiversityTileLayer.getSource().changed();
+
+            // Also trigger a map render to ensure immediate visual update
+            this.map.render();
+
+            console.log('Biodiversity layer updated and refreshed');
         },
 
         clearAllLayers: function () {
+            console.log('Clearing all layers');
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
                 viewparams: 'where:' + emptyWMSSiteParameter
             };
             this.layers.biodiversitySource.updateParams(newParams);
+            this.layers.biodiversityTileLayer.getSource().changed();
+            this.map.render();
         },
 
         resetSitesLayer: function () {
+            console.log('Resetting sites layer to default');
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
                 viewparams: 'where:' + defaultWMSSiteParameters
             };
             this.layers.biodiversitySource.updateParams(newParams);
+            this.layers.biodiversityTileLayer.getSource().changed();
+            this.map.render();
         },
 
         toggleMapInteraction: function (enabled) {

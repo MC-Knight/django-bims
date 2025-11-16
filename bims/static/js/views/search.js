@@ -529,6 +529,7 @@ define([
             Shared.Dispatcher.trigger('map:closeHighlight');
             Shared.Dispatcher.trigger(Shared.EVENTS.SEARCH.HIT, filterParameters);
             Shared.Dispatcher.trigger('sidePanel:closeSidePanel');
+            Shared.Dispatcher.trigger('map:filterPinnedSites');
             if (!filterParameters['search']
                 && !filterParameters['collector']
                 && !filterParameters['validated']
@@ -643,6 +644,9 @@ define([
             let permalinkButton = $('#permalink-control');
             permalinkButton.addClass('sub-control-panel-disabled');
             permalinkButton.attr('data-content', 'No filters applied');
+
+            // Clear filtered site IDs and filter pinned sites (will show all since no filters active)
+            Shared.Dispatcher.trigger('map:updateFilteredSiteIds', []);
         },
         datePickerToDate: function (element) {
             if ($(element).val()) {
@@ -658,13 +662,13 @@ define([
             if (this.startYear === this.endYear) {
                 this.startYear -= 1;
             }
-            
+
             // Add safety check for existing slider
             const sliderElement = $('#year-slider')[0];
             if (sliderElement && sliderElement.noUiSlider) {
                 sliderElement.noUiSlider.destroy();
             }
-            
+
             this.yearSlider = NoUiSlider.create(sliderElement, {
                 start: [this.startYear, this.endYear],
                 connect: true,

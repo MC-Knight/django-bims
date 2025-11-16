@@ -293,6 +293,8 @@ define([
             } else {
                 Shared.Dispatcher.trigger('map:clearAllLayers');
                 Shared.Dispatcher.trigger('map:zoomToDefault');
+                // Clear filtered site IDs when no results
+                Shared.Dispatcher.trigger('map:updateFilteredSiteIds', []);
             }
 
             var taxaListNumberElm = $('#taxa-list-number');
@@ -334,6 +336,12 @@ define([
             }
 
             Shared.Dispatcher.trigger('siteDetail:updateCurrentSpeciesSearchResult', speciesListName);
+
+            // Extract and send site IDs to map for filtering pinned sites
+            var siteIds = this.sitesData.map(function(site) {
+                return site['site_id'];
+            });
+            Shared.Dispatcher.trigger('map:updateFilteredSiteIds', siteIds);
         },
         clearPagination: function () {
             this.pageMoreTaxa = 2;

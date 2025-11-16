@@ -66,7 +66,12 @@ class CollectionSearchAPIView(BimsApiView):
                     results['records'] = (
                         results['records'][:MAX_PAGINATED_RECORDS]
                     )
-                results['sites_raw_query'] = search_process.process_id
+
+                if 'sites' in results and results['sites']:
+                    site_ids = [site['site_id'] for site in results['sites']]
+                    results['sites_raw_query'] = f"site_id IN ({','.join(map(str, site_ids))})"
+                else:
+                    results['sites_raw_query'] = "1=0"
                 return Response(results)
 
         # Create process id
@@ -891,7 +896,8 @@ class CollectionSearch(object):
                 'total_abiotic_data': abiotic_site['total_abiotic_data']
             })
 
-        return {
+
+        summary_data = {
             'total_records': self.collection_records.count(),
             'total_sites': (
                 sites.count() + (thermal_sites.count() if thermal_sites else 0) +
@@ -901,3 +907,11 @@ class CollectionSearch(object):
             'records': list(collections),
             'sites': site_list
         }
+
+        if site_list:
+            site_ids = [site['site_id'] for site in site_list if site.get('site_id')]
+            summary_data['sites_raw_query'] = f"site_id IN ({','.join(map(str, site_ids))})" if site_ids else "1=0"
+        else:
+            summary_data['sites_raw_query'] = "1=0"
+
+        return summary_data
