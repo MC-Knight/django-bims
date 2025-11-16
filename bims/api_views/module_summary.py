@@ -106,7 +106,7 @@ class ModuleSummary(APIView):
                 ).annotate(
                     value=Case(
                         When(iucn_status__isnull=False, then=F('iucn_status__category')),
-                        default=Value('Not evaluated')
+                        default=Value('NE')
                     )
                 ).values('value').annotate(
                     count=Count('value')
