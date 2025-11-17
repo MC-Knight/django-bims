@@ -23,6 +23,7 @@ define([
         totalRecords: 0,
         totalSites: 0,
         totalTaxa: 0,
+        sitesRawQuery: '',
         processID: 0,
         pageMoreSites: 2,
         pageMoreTaxa: 2,
@@ -227,7 +228,9 @@ define([
                 if (this.searchFinishedCallback) {
                     this.searchFinishedCallback();
                 }
+
                 Shared.Dispatcher.trigger('map:updateBiodiversityLayerParams', this.sitesRawQuery);
+
                 if (this.extent.length === 4) {
                     Shared.Dispatcher.trigger('map:zoomToExtent', this.extent, true, false);
                 }
@@ -288,12 +291,11 @@ define([
                         Shared.Dispatcher.trigger(
                             'taxonDetail:show', self.recordsData[0]['taxon_id'], self.recordsData[0]['name'], null);
                     });
-
                 }
             } else {
+                // No results - clear map
                 Shared.Dispatcher.trigger('map:clearAllLayers');
                 Shared.Dispatcher.trigger('map:zoomToDefault');
-                // Clear filtered site IDs when no results
                 Shared.Dispatcher.trigger('map:updateFilteredSiteIds', []);
             }
 

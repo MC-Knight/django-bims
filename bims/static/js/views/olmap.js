@@ -127,6 +127,7 @@ define([
             // Dashboard events - register immediately (commonly used)
             this.registerDashboardEvents();
 
+
             // Feature events - lazy load
             this.featureEventsRegistered = false;
 
@@ -631,6 +632,8 @@ define([
                 self.mapClicked(e);
             });
 
+            this.registerLayerEvents();
+
             this.sidePanelView = new SidePanelView();
             this.mapControlPanel = new MapControlPanelView({
                 parent: this
@@ -816,14 +819,29 @@ define([
         },
 
         removeLayer: function (layer) {
+            if (!layer || typeof layer.getSource !== 'function') {
+                console.warn('removeLayer: Invalid layer object provided', layer);
+                return;
+            }
             this.map.removeLayer(layer);
         },
 
         addLayer: function (layer) {
+            // Validate that layer is an actual OpenLayers layer object
+            if (!layer || typeof layer.getSource !== 'function') {
+                return;
+            }
+
             this.map.addLayer(layer);
+
             // Setup tile monitoring for new layer if it's visible
-            if (layer.getVisible() && layer.getSource() instanceof ol.source.TileImage) {
-                this.setupTileMonitoringForLayer(layer);
+            try {
+                var source = layer.getSource();
+                if (source && layer.getVisible() && source instanceof ol.source.TileImage) {
+                    this.setupTileMonitoringForLayer(layer);
+                }
+            } catch (err) {
+                console.warn('Error setting up tile monitoring in addLayer:', err);
             }
         },
 
@@ -1105,6 +1123,9 @@ define([
         },
 
         updateBiodiversityLayerParams: function (query) {
+            if (!this.layerEventsRegistered) {
+                this.registerLayerEvents();
+            }
             console.log('Updating biodiversity layer with query:', query);
             query = query.replaceAll(',', '\\,');
             query = query.replaceAll(';', '\\;');
@@ -1112,35 +1133,42 @@ define([
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
                 viewparams: 'where:"' + query + '"',
-                t: new Date().getTime()  // Cache buster to force new tiles from GeoServer
+                t: new Date().getTime()
             };
             this.layers.biodiversitySource.updateParams(newParams);
             this.layers.biodiversitySource.refresh();  // Force refresh to fetch new tiles
             console.log('Biodiversity layer updated with new query');
         },
 
+      // FIXED: Clear all layers and reset to initial state
         clearAllLayers: function () {
-            console.log('Clearing all layers');
-            let newParams = {
-                layers: locationSiteGeoserverLayer,
-                format: 'image/png',
-                viewparams: 'where:' + emptyWMSSiteParameter,
-                t: new Date().getTime()
-            };
-            this.layers.biodiversitySource.updateParams(newParams);
-            this.layers.biodiversitySource.refresh();
+            // Clear the filtered site IDs
+            this.currentFilteredSiteIds = [];
+
+            // Clear cache to ensure fresh data
+            this.clearCache();
+
+            // Reset to default WMS parameters (shows all sites)
+            this.resetSitesLayer();
+
+            // Clear any highlights
+            this.closeHighlight();
         },
 
         resetSitesLayer: function () {
-            console.log('Resetting sites layer to default');
+            // Reset filtered site IDs to empty (no filter)
+            this.currentFilteredSiteIds = [];
+
+            // Update layer with default parameters
             let newParams = {
                 layers: locationSiteGeoserverLayer,
                 format: 'image/png',
                 viewparams: 'where:' + defaultWMSSiteParameters,
-                t: new Date().getTime()
+                t: new Date().getTime()  // Cache buster
             };
+
             this.layers.biodiversitySource.updateParams(newParams);
-            this.layers.biodiversitySource.refresh();
+            this.layers.biodiversitySource.refresh();  // Force refresh
         },
 
         toggleMapInteraction: function (enabled) {
