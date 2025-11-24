@@ -43,32 +43,44 @@ class ModuleSummary(APIView):
             module_group=taxon_group
         )
 
-        # Existing chart data logic (keeping your existing code)
+        # Get taxonomies directly from taxon group - SINGLE SOURCE OF TRUTH
+        from bims.models.taxonomy import Taxonomy
+        base_species = taxon_group.taxonomies.all()
+
+        # Chart data logic based on chart_data field
         if taxon_group.chart_data == 'division':
-            summary['division'] = collections.values(
-                'taxonomy__additional_data__Division').annotate(
-                count=Count('taxonomy__additional_data__Division')
-            ).values('taxonomy__additional_data__Division', 'count')
+            summary['division'] = base_species.values(
+                'additional_data__Division'
+            ).annotate(
+                count=Count('additional_data__Division')
+            ).values('additional_data__Division', 'count')
+
         elif taxon_group.chart_data == 'origin':
             origin_data = dict(
-                collections.exclude(taxonomy__origin__exact='').values(
-                    'taxonomy__origin').annotate(
-                    count=Count('taxonomy__origin')
-                ).values_list('taxonomy__origin', 'count'))
+                base_species.exclude(
+                    origin__exact=''
+                ).values('origin').annotate(
+                    count=Count('origin')
+                ).values_list('origin', 'count')
+            )
             updated_origin_data = {}
             origin_category = dict(Taxonomy.CATEGORY_CHOICES)
             for key in origin_data.keys():
-                updated_origin_data[origin_category[key]] = (
-                    origin_data[key]
-                )
+                updated_origin_data[origin_category[key]] = origin_data[key]
             summary['origin'] = updated_origin_data
+
         elif taxon_group.chart_data == 'endemism':
-            summary['endemism'] = dict(collections.annotate(
-                value=Case(When(taxonomy__endemism__isnull=False,
-                                then=F('taxonomy__endemism__name')),
-                        default=Value('Unknown'))
-            ).values('value').annotate(
-                count=Count('value')).values_list('value', 'count'))
+            summary['endemism'] = dict(
+                base_species.annotate(
+                    value=Case(
+                        When(endemism__isnull=False, then=F('endemism__name')),
+                        default=Value('Unknown')
+                    )
+                ).values('value').annotate(
+                    count=Count('value')
+                ).values_list('value', 'count')
+            )
+
         elif taxon_group.chart_data == 'sass':
             site_visit_ecological = SiteVisitTaxon.objects.filter(
                 **{
@@ -84,46 +96,29 @@ class ModuleSummary(APIView):
                 color=F('site_visit__'
                         'sitevisitecologicalcondition__'
                         'ecological_condition__colour')
-            ).values('value', 'count', 'color').order_by(
-                'value'
-            )
-            summary['ecological_data'] = list(
-                site_visit_ecological
-            )
+            ).values('value', 'count', 'color').order_by('value')
+            summary['ecological_data'] = list(site_visit_ecological)
             summary['total_sass'] = SiteVisit.objects.all().count()
+
         else:
-            # Get unique taxonomies for this taxon group
-            unique_taxonomies = collections.values_list('taxonomy', flat=True).distinct()
-
-            # Query taxonomies directly instead of collections
-            from bims.models.taxonomy import Taxonomy
-
-            summary_temp = dict(
-                Taxonomy.objects.filter(
-                    id__in=unique_taxonomies
-                ).exclude(
-                    origin__exact=''
-                ).annotate(
-                    value=Case(
-                        When(iucn_status__isnull=False, then=F('iucn_status__category')),
-                        default=Value('NE')
-                    )
-                ).values('value').annotate(
-                    count=Count('value')
-                ).values_list('value', 'count')
-            )
-
+            # Default: Conservation status
+            # Initialize all IUCN statuses with count 0
             iucn_category = dict(IUCNStatus.CATEGORY_CHOICES)
             updated_summary = {}
 
-            # Initialize all IUCN statuses with count 0
             for category_code, category_name in IUCNStatus.CATEGORY_CHOICES:
                 updated_summary[category_name] = 0
 
-            # Update with actual counts
-            for key in summary_temp.keys():
-                if key in iucn_category:
-                    updated_summary[iucn_category[key]] = summary_temp[key]
+            # Count each IUCN status category
+            for category_code, category_name in IUCNStatus.CATEGORY_CHOICES:
+                # Count species with specific IUCN status category
+                count = base_species.filter(iucn_status__category=category_code).count()
+                updated_summary[category_name] = count
+
+            # ADD species with no IUCN status (NULL) to the "Not evaluated" category
+            # Don't overwrite! Add to the existing count!
+            not_evaluated_null_count = base_species.filter(iucn_status__isnull=True).count()
+            updated_summary['Not evaluated'] += not_evaluated_null_count
 
             summary['conservation-status'] = updated_summary
 
