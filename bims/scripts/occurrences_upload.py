@@ -267,7 +267,7 @@ class OccurrenceProcessor(object):
             location_site_name = DataCSVUpload.row_value(record, WETLAND_NAME)
 
         # Find existing location site by data source site code
-        data_source = preferences.SiteSetting.default_data_source.upper()
+        data_source = (preferences.SiteSetting.default_data_source or '').upper()
         existing_site_code = DataCSVUpload.row_value(
             record, '{} Site Code'.format(
                 data_source
