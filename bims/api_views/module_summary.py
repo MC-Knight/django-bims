@@ -192,7 +192,7 @@ class GeneralModuleSummary(APIView):
 
         counts = {
             'total_occurrences': total_occurrences,
-            'total_taxa': total_taxa,
+            'total_taxa': Taxonomy.objects.count(),
             'total_users': get_user_model().objects.filter(
                 last_login__isnull=False
             ).count(),
@@ -350,8 +350,10 @@ class TaxonGroupSpeciesAPIView(APIView):
         # Apply IUCN status filter
         if iucn_status:
             if iucn_status.upper() == 'NE' or iucn_status.lower() == 'not evaluated':
-                # Filter for species without IUCN status (Not evaluated)
-                species_taxonomies = species_taxonomies.filter(iucn_status__isnull=True)
+                # Filter for species without IUCN status OR with NE status
+                species_taxonomies = species_taxonomies.filter(
+                    Q(iucn_status__isnull=True) | Q(iucn_status__category='NE')
+                )
             else:
                 # Filter by specific IUCN status category
                 species_taxonomies = species_taxonomies.filter(iucn_status__category=iucn_status.upper())
@@ -370,6 +372,11 @@ class TaxonGroupSpeciesAPIView(APIView):
         # Format data
         species_data = []
         for taxonomy in paginated_species:
+            if taxonomy.iucn_status:
+                conservation_status = taxonomy.iucn_status.category
+            else:
+                conservation_status = 'NE'
+
             species_data.append({
                 'id': taxonomy.id,
                 'name': taxonomy.canonical_name or taxonomy.scientific_name,
@@ -377,7 +384,7 @@ class TaxonGroupSpeciesAPIView(APIView):
                 'rank': taxonomy.rank,
                 'family_name': taxonomy.family_name,
                 'order_name': taxonomy.order_name,
-                'conservation_status': taxonomy.iucn_status.category if taxonomy.iucn_status else 'Not evaluated',
+                'conservation_status': conservation_status,
                 'origin': dict(Taxonomy.CATEGORY_CHOICES).get(taxonomy.origin, 'Unknown') if taxonomy.origin else 'Unknown'
             })
 
