@@ -32,11 +32,11 @@
                 <a class="nav-link" href="{{ domain_name }}#citation">Citation</a>
             </li>
         </ul>
-   
+
 
     {% if request.get_host in domain_name %}
     <div class="nav-user">
-        {% if user.is_authenticated %}      
+        {% if user.is_authenticated %}
         <p id="toggle-authenticated-navbar">{{ user }} <i class="fa fa-caret-down" aria-hidden="true"></i></p>
         {% else %}
         <ul>
@@ -149,16 +149,16 @@
             </li>
         </ul>
     </div>
-    
+
     <div class="resources-navbar">
         <div class="resources-links">
             <a href="{{ domain_name }}/biodiversity-threats">Threats to biodiversity in Rwanda</a>
             <a href="/">Data Product</a>
             <a href="/">International Commitments</a>
-            <a href="/">Biodiverisity of Special Conservation Concern</a>
+            <a href="/">Biodiversity of Special Conservation Concern</a>
             <a href="{{ domain_name }}/biodiversity-assessments">Spatial Biodiversity Assessments</a>
         </div>
-    </div> 
+    </div>
 </nav>
 
 
@@ -178,14 +178,14 @@ $(document).ready(function(){
         $(document.body).css("overflow-y", "auto");
     });
 
-    
+
     $("#toggle-authenticated-navbar").click(function(){
         $(".authenticated-navbar").css("display", "flex");
         $(".authenticated-navbar").css("right", "0");
         $(document.body).css("overflow-y", "hidden");
     });
 
-   
+
     $("#toggle-authenticated-close-navbar").click(function(){
         $(".authenticated-navbar").css("right", "-250px");
         setTimeout(function(){
