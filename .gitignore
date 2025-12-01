@@ -142,5 +142,3 @@ deployment/geoserver_data
 .commit.txt
 .tag.txt
 node_modules/
-bundles/
-webpack-stats.json

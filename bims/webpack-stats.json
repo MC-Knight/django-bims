@@ -1,0 +1,31 @@
+{
+  "status": "done",
+  "assets": {
+    "css/main-4ddbaf71a065c7cf459d.css": {
+      "name": "css/main-4ddbaf71a065c7cf459d.css",
+      "path": "/home/web/django_project/bims/static/bims/bundles/css/main-4ddbaf71a065c7cf459d.css"
+    },
+    "main-4ddbaf71a065c7cf459d.js": {
+      "name": "main-4ddbaf71a065c7cf459d.js",
+      "path": "/home/web/django_project/bims/static/bims/bundles/main-4ddbaf71a065c7cf459d.js"
+    },
+    "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css": {
+      "name": "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css",
+      "path": "/home/web/django_project/bims/static/bims/bundles/css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css"
+    },
+    "AddSourceReferenceView-4ddbaf71a065c7cf459d.js": {
+      "name": "AddSourceReferenceView-4ddbaf71a065c7cf459d.js",
+      "path": "/home/web/django_project/bims/static/bims/bundles/AddSourceReferenceView-4ddbaf71a065c7cf459d.js"
+    }
+  },
+  "chunks": {
+    "main": [
+      "css/main-4ddbaf71a065c7cf459d.css",
+      "main-4ddbaf71a065c7cf459d.js"
+    ],
+    "AddSourceReferenceView": [
+      "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css",
+      "AddSourceReferenceView-4ddbaf71a065c7cf459d.js"
+    ]
+  }
+}
