@@ -45,7 +45,13 @@ RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
 #USER www-data
 ADD . /home/web/django_project
 WORKDIR /home/web/django_project
-RUN cd bims && npm install --quiet -g webpack@5.50.0 && npm install --quiet -g webpack-cli@4.8.0 && npm install --quiet && webpack --mode production
+RUN cd bims && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install -g webpack@5.50.0 webpack-cli@4.8.0 && \
+    npm install --no-optional && \
+    webpack --mode production
 
 ADD deployment/docker/uwsgi.conf /uwsgi.conf
 
