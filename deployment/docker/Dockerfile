@@ -90,7 +90,7 @@ ADD bashrc /root/.bashrc
 RUN apt-get install -y chromium
 RUN mkdir -p /opt/karma
 RUN npm install -g karma
-RUN cd / && npm install
+# RUN cd / && npm install
 
 RUN apt-get install vim -y
 ADD karma.conf.docker.js /karma.conf.js
