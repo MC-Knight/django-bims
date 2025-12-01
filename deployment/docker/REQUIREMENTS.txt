@@ -65,7 +65,7 @@ django-taggit==1.5.1
 django-templatetag-sugar==1.0
 django-treebeard==4.5.1
 django-uuid-upload-path==1.0.0
-django-webpack-loader==0.7.0
+django-webpack-loader==3.2.2
 djangorestframework==3.11.2
 djangorestframework-gis==0.15
 djangorestframework-guardian==0.3.0

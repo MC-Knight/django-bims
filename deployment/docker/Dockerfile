@@ -21,7 +21,7 @@ RUN echo "Updating apt-get" && \
     pip install uwsgi && \
     apt-get install -y git && \
     echo "Node js" && \
-    curl -sL https://deb.nodesource.com/setup_12.x -o nodesource_setup.sh && \
+    curl -sL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh && \
     apt-get install -y nodejs && \
     echo "Removing build dependencies and cleaning up" && \

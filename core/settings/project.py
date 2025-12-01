@@ -44,7 +44,7 @@ REQUIRE_JS_PATH = "/static/js/libs/requirejs-2.3.5/require.js"
 
 GRUNT_MODULES = {
     'map_view': {
-        'main': 'js/app.js',   
+        'main': 'js/app.js',
         'optimized': 'js/optimized.js',
     }
 }
@@ -94,5 +94,9 @@ WEBPACK_LOADER = {
     "DEFAULT": {
         "BUNDLE_DIR_NAME": "bims/bundles/",
         "STATS_FILE": absolute_path("bims", "webpack-stats.json"),
+        "POLL_INTERVAL": 0.1,
+        "IGNORE": [".+\.hot-update.js", ".+\.map"],
+        "CACHE": not DEBUG,
     }
 }
+
