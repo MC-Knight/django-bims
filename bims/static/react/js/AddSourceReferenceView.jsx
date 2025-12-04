@@ -63,7 +63,8 @@ class AddSourceReferenceView extends React.Component {
         const author = this.authorInput.state.authors[i];
         authorIds.push(author.id)
       }
-      document.getElementById('author_ids').value = authorIds.join();
+      // Only set value if there are authors, otherwise leave empty
+      document.getElementById('author_ids').value = authorIds.length > 0 ? authorIds.join(',') : '';
     }
 
     if (this.doiInput && this.doiInput.state.entry) {

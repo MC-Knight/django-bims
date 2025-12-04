@@ -666,15 +666,49 @@ class AddSourceReferenceView(UserPassesTestMixin, CreateView):
         )
 
         # Update authors
+        order = 1
+        # First process author_ids (from autocomplete)
         try:
             author_ids = post_data.get('author_ids', None)
-            if author_ids:
-                bims_document.authors.clear()
+            if author_ids and author_ids.strip():
                 author_ids = author_ids.split(',')
                 for author_id in author_ids:
-                    bims_document.authors.add(author_id)
+                    # Skip empty strings
+                    if author_id and author_id.strip():
+                        try:
+                            author_user = get_user_model().objects.get(
+                                id=author_id.strip()
+                            )
+                            bims_doc_author, _ = (
+                                BimsDocumentAuthorship.objects.get_or_create(
+                                    bimsdocument=bims_document,
+                                    profile=author_user
+                                )
+                            )
+                            bims_doc_author.ordering = order
+                            bims_doc_author.save()
+                            order += 1
+                        except get_user_model().DoesNotExist:
+                            continue
         except KeyError:
             pass
+
+        # Then process author_X fields (typed new authors)
+        for key in post_data:
+            if 'author' in key and 'author_ids' not in key:
+                user_string = post_data[key].strip()
+                if user_string:
+                    author_user = self.get_user_from_string(user_string)
+                    if author_user:
+                        bims_doc_author, _ = (
+                            BimsDocumentAuthorship.objects.get_or_create(
+                                bimsdocument=bims_document,
+                                profile=author_user
+                            )
+                        )
+                        bims_doc_author.ordering = order
+                        bims_doc_author.save()
+                        order += 1
 
         source_reference, created = (
             SourceReferenceDocument.objects.get_or_create(
