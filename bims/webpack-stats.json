@@ -1,31 +1,31 @@
 {
   "status": "done",
   "assets": {
-    "css/main-4ddbaf71a065c7cf459d.css": {
-      "name": "css/main-4ddbaf71a065c7cf459d.css",
-      "path": "/home/web/django_project/bims/static/bims/bundles/css/main-4ddbaf71a065c7cf459d.css"
+    "css/main-9a31814866ac37198dd5.css": {
+      "name": "css/main-9a31814866ac37198dd5.css",
+      "path": "/home/web/django_project/bims/static/bims/bundles/css/main-9a31814866ac37198dd5.css"
     },
-    "main-4ddbaf71a065c7cf459d.js": {
-      "name": "main-4ddbaf71a065c7cf459d.js",
-      "path": "/home/web/django_project/bims/static/bims/bundles/main-4ddbaf71a065c7cf459d.js"
+    "main-9a31814866ac37198dd5.js": {
+      "name": "main-9a31814866ac37198dd5.js",
+      "path": "/home/web/django_project/bims/static/bims/bundles/main-9a31814866ac37198dd5.js"
     },
-    "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css": {
-      "name": "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css",
-      "path": "/home/web/django_project/bims/static/bims/bundles/css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css"
+    "css/AddSourceReferenceView-9a31814866ac37198dd5.css": {
+      "name": "css/AddSourceReferenceView-9a31814866ac37198dd5.css",
+      "path": "/home/web/django_project/bims/static/bims/bundles/css/AddSourceReferenceView-9a31814866ac37198dd5.css"
     },
-    "AddSourceReferenceView-4ddbaf71a065c7cf459d.js": {
-      "name": "AddSourceReferenceView-4ddbaf71a065c7cf459d.js",
-      "path": "/home/web/django_project/bims/static/bims/bundles/AddSourceReferenceView-4ddbaf71a065c7cf459d.js"
+    "AddSourceReferenceView-9a31814866ac37198dd5.js": {
+      "name": "AddSourceReferenceView-9a31814866ac37198dd5.js",
+      "path": "/home/web/django_project/bims/static/bims/bundles/AddSourceReferenceView-9a31814866ac37198dd5.js"
     }
   },
   "chunks": {
     "main": [
-      "css/main-4ddbaf71a065c7cf459d.css",
-      "main-4ddbaf71a065c7cf459d.js"
+      "css/main-9a31814866ac37198dd5.css",
+      "main-9a31814866ac37198dd5.js"
     ],
     "AddSourceReferenceView": [
-      "css/AddSourceReferenceView-4ddbaf71a065c7cf459d.css",
-      "AddSourceReferenceView-4ddbaf71a065c7cf459d.js"
+      "css/AddSourceReferenceView-9a31814866ac37198dd5.css",
+      "AddSourceReferenceView-9a31814866ac37198dd5.js"
     ]
   }
 }
