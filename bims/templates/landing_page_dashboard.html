@@ -58,6 +58,43 @@
     </div>
 </div>
 
+<!-- Image Modal -->
+<div id="imageModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width: 500px; width: 500px;">
+        <div class="modal-content" style="height: 500px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Species Image</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body d-flex align-items-center justify-content-center" style="background-color: #000; padding: 0; height: calc(500px - 56px);">
+                <img id="speciesImage" src="" alt="Species Image" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sound Modal -->
+<div id="soundModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="soundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width: 500px; width: 500px;">
+        <div class="modal-content" style="height: 500px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="soundModalLabel">Species Sound</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body d-flex align-items-center justify-content-center" style="height: calc(500px - 56px);">
+                <audio id="speciesAudio" controls style="width: 80%; max-width: 400px;">
+                    <source id="audioSource" src="" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .clickable-count {
     cursor: pointer;
@@ -123,6 +160,8 @@
 .origin-alien { color: #dc3545; font-weight: bold; }
 .origin-translocated { color: #fd7e14; font-weight: bold; }
 
+
+
 .modal-body {
     max-height: 500px;
     overflow-y: auto;
@@ -141,6 +180,35 @@
 
 .pagination .page-item.disabled .page-link {
     cursor: not-allowed;
+}
+
+.species-media-links {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: 10px;
+    float: right;
+}
+
+.media-link {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    color: #007bff;
+    text-decoration: none;
+    border: 1px solid #007bff;
+    border-radius: 3px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.media-link:hover {
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+}
+
+.media-link i {
+    margin-right: 3px;
 }
 </style>
 
@@ -328,7 +396,36 @@
 
         data.data.forEach(item => {
             content += '<div class="taxonomy-item">';
-            content += `<div class="taxonomy-name">${item.name}</div>`;
+
+            // Species name and media links container
+            content += '<div>';
+            content += `<div class="taxonomy-name" style="display: inline-block;">${item.name}</div>`;
+
+            // Add media links only for species
+            if (currentModalState.type === 'species') {
+                content += '<div class="species-media-links">';
+
+                if (item.image_url) {
+                    content += `<a href="javascript:void(0)" class="media-link" onclick="showImageModal('${item.image_url.replace(/'/g, "\\'")}', '${item.name.replace(/'/g, "\\'")}')">
+                        <i class="fa fa-picture-o"></i>Image
+                    </a>`;
+                }
+
+                if (item.sound_url) {
+                    content += `<a href="javascript:void(0)" class="media-link" onclick="showSoundModal('${item.sound_url.replace(/'/g, "\\'")}', '${item.name.replace(/'/g, "\\'")}')">
+                        <i class="fa fa-volume-up"></i>Sound
+                    </a>`;
+                }
+
+                if (item.more_info_url) {
+                    content += `<a href="${item.more_info_url}" target="_blank" class="media-link">
+                        <i class="fa fa-info-circle"></i>More Info
+                    </a>`;
+                }
+
+                content += '</div>';
+            }
+            content += '</div>';
 
             if (item.scientific_name && item.scientific_name !== item.name) {
                 content += `<div class="taxonomy-scientific">${item.scientific_name}</div>`;
@@ -422,6 +519,27 @@
             currentModalState.currentPage = 1; // Reset to first page on search
             loadTaxonomyData();
         }, 500); // Wait 500ms after user stops typing
+    });
+
+    // Function to show image modal
+    function showImageModal(imageUrl, speciesName) {
+        $('#imageModalLabel').text(speciesName + ' - Image');
+        $('#speciesImage').attr('src', imageUrl);
+        $('#imageModal').modal('show');
+    }
+
+    // Function to show sound modal
+    function showSoundModal(soundUrl, speciesName) {
+        $('#soundModalLabel').text(speciesName + ' - Sound');
+        $('#audioSource').attr('src', soundUrl);
+        $('#speciesAudio')[0].load(); // Reload audio element
+        $('#soundModal').modal('show');
+    }
+
+    // Stop audio when sound modal is closed
+    $('#soundModal').on('hidden.bs.modal', function () {
+        $('#speciesAudio')[0].pause();
+        $('#speciesAudio')[0].currentTime = 0;
     });
 
     function createModuleCharts(moduleData, moduleName, container) {

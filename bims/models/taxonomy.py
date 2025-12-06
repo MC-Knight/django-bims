@@ -197,6 +197,30 @@ class Taxonomy(AbstractValidation):
         blank=True
     )
 
+    image = models.ImageField(
+        verbose_name='Species Image',
+        upload_to='taxonomy/images/',
+        null=True,
+        blank=True,
+        help_text='Upload species image'
+    )
+
+    sound = models.FileField(
+        verbose_name='Species Sound',
+        upload_to='taxonomy/sounds/',
+        null=True,
+        blank=True,
+        help_text='Upload species sound/audio file'
+    )
+
+    more_info_url = models.URLField(
+        verbose_name='More Info URL',
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text='URL to additional information about the species'
+    )
+
     def save_json_data(self, json_field):
         max_allowed = 10
         attempt = 0

@@ -385,7 +385,10 @@ class TaxonGroupSpeciesAPIView(APIView):
                 'family_name': taxonomy.family_name,
                 'order_name': taxonomy.order_name,
                 'conservation_status': conservation_status,
-                'origin': dict(Taxonomy.CATEGORY_CHOICES).get(taxonomy.origin, 'Unknown') if taxonomy.origin else 'Unknown'
+                'origin': dict(Taxonomy.CATEGORY_CHOICES).get(taxonomy.origin, 'Unknown') if taxonomy.origin else 'Unknown',
+                'image_url': taxonomy.image.url if taxonomy.image else None,
+                'sound_url': taxonomy.sound.url if taxonomy.sound else None,
+                'more_info_url': taxonomy.more_info_url
             })
 
         return Response({
