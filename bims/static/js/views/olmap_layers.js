@@ -933,21 +933,51 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                 url: `/bims_proxy/http://${source}/geoserver/${url_provider}/wms?service=WMS&request=getCapabilities`,
                 dataType: `xml`,
                 success: function (response) {
-                    let xml_response, parser, xmlDoc;
-                    xml_response = response['documentElement']['innerHTML'];
-                    xml_response = xml_response.replace(/[\r\n]*/g, "");
-                    xml_response = xml_response.replace("\\n", "");
-                    xml_response = '<document>' + xml_response.replace(" ", "") + '</document>';
-
-                    parser = new DOMParser();
-                    xmlDoc = parser.parseFromString(xml_response, 'text/xml');
                     try {
-                        abstract_result = xmlDoc.getElementsByTagName("Abstract")[2].childNodes[0].nodeValue;
+                        // Parse the XML response directly
+                        let xmlDoc = response;
+                        
+                        // Get all Layer elements
+                        let layers = xmlDoc.getElementsByTagName("Layer");
+                        
+                        // Search for the specific layer by name
+                        for (let i = 0; i < layers.length; i++) {
+                            let nameElements = layers[i].getElementsByTagName("Name");
+                            if (nameElements.length > 0) {
+                                let layerNameText = nameElements[0].textContent || nameElements[0].text;
+                                // Check if this is the layer we're looking for
+                                if (layerNameText === layerKey || layerNameText === url_key || layerNameText.indexOf(url_key) >= 0) {
+                                    let abstractElements = layers[i].getElementsByTagName("Abstract");
+                                    if (abstractElements.length > 0) {
+                                        abstract_result = abstractElements[0].textContent || abstractElements[0].text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If no specific layer abstract found, try getting any Abstract element
+                        if (!abstract_result) {
+                            let allAbstracts = xmlDoc.getElementsByTagName("Abstract");
+                            for (let i = 0; i < allAbstracts.length; i++) {
+                                let abstractText = allAbstracts[i].textContent || allAbstracts[i].text;
+                                if (abstractText && abstractText.trim().length > 0) {
+                                    abstract_result = abstractText;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!abstract_result) {
+                            abstract_result = "Abstract information unavailable.";
+                        }
                     } catch (e) {
+                        console.error("Error parsing layer abstract:", e);
                         abstract_result = "Abstract information unavailable.";
                     }
                 },
                 error(err) {
+                    console.error("Error fetching layer abstract:", err);
                     abstract_result = "Abstract information unavailable.";
                 },
                 complete() {
