@@ -1,0 +1,99 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+
+{% block subtitle %}
+    Add Molecular Genetics Group
+{% endblock %}
+
+{% block head %}
+    <style>
+        .form-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #337ab7;
+        }
+        .btn-submit {
+            background-color: #337ab7;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background-color: #286090;
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %}
+<div class="form-container">
+    <h2 class="form-title">Add New Molecular Genetics Group</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Group Name *</label>
+            <input type="text" id="name" name="name" required
+                   placeholder="e.g., Mammals, Amphibians, Fish, etc.">
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                Enter a descriptive name for the taxonomic or species group
+            </small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <i class="fa fa-save"></i> Create Group
+            </button>
+            <a href="{% url 'molecular-genetics-home' %}" class="btn-cancel">
+                <i class="fa fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

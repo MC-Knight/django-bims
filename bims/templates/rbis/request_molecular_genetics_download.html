@@ -1,0 +1,118 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+
+{% block subtitle %}
+    Request Download Access
+{% endblock %}
+
+{% block head %}
+    <style>
+        .form-container {
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-height: 120px;
+            font-family: Arial, sans-serif;
+        }
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #337ab7;
+        }
+        .btn-submit {
+            background-color: #337ab7;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background-color: #286090;
+        }
+        .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-cancel:hover {
+            background-color: #5a6268;
+        }
+        .data-info {
+            background-color: #e7f3fe;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %}
+<div class="form-container">
+    <h2 class="form-title">Request Download Access</h2>
+
+    <div class="data-info">
+        <p><strong>Dataset:</strong> {{ genetic_data.title }}</p>
+        <p><strong>Group:</strong> {{ genetic_data.group.name }}</p>
+    </div>
+
+    <p style="color: #666; margin-bottom: 20px;">
+        Please provide a detailed explanation of why you need access to this molecular genetics data.
+        Your request will be reviewed by administrators before approval.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="reason">Reason for Request *</label>
+            <textarea id="reason" name="reason" required
+                      placeholder="Please explain your intended use of this data, including research purposes, institutional affiliation, and any relevant details..."></textarea>
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                Provide as much detail as possible to help administrators evaluate your request
+            </small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <i class="fa fa-paper-plane"></i> Submit Request
+            </button>
+            <a href="{% url 'molecular-genetics-group-detail' group_id=genetic_data.group.id %}" class="btn-cancel">
+                <i class="fa fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

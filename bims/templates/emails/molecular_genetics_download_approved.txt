@@ -1,0 +1,22 @@
+DOWNLOAD REQUEST APPROVED
+=========================
+
+Hello {{ requester_name }},
+
+Great news! Your download request for molecular genetics data has been approved.
+
+REQUEST DETAILS
+---------------
+Data Title: {{ data_title }}
+Specie: {{ group_name }}
+Approved At: {{ approved_at }}
+Approved By: {{ approver_name }}
+
+DOWNLOAD YOUR DATA
+------------------
+{{ download_url }}
+
+Please ensure you use this data responsibly and in accordance with any applicable data usage policies.
+
+---
+This is an automated email. Please do not reply.

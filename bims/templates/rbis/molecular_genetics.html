@@ -1,0 +1,51 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+
+{% block subtitle %}
+    Molecular Genetics
+{% endblock %}
+
+{% block head %}
+    <link href="{% static "rbis/biodiversity_assessments.css" %}" rel="stylesheet">
+{% endblock %}
+
+{% block body_content %}
+<div class="biodiversity-assessment-home">
+    <h1>Molecular Genetics</h1>
+
+    <p>
+        This page provides access to molecular genetics data grouped by taxonomic categories.
+        Explore genetic information for different species groups including mammals, amphibians, and more.
+    </p>
+
+
+    <div class="admin-actions" style="margin-bottom: 20px;">
+         {% if is_superuser %}
+        <a href="{% url 'add-molecular-genetics-group' %}" class="btn btn-primary">
+            <i class="fa fa-plus"></i> Add New Group
+        </a>
+         {% endif %}
+
+        <a href="{% url 'molecular-genetics-download-requests' %}" class="btn btn-primary">
+            &rarr; Molecular Genetics Data Download Requests
+        </a>
+    </div>
+
+
+    <div class="biodiversity-assessments-intro">
+        {% for group in groups %}
+            <div class="assessment-article" style="padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <a href="{% url 'molecular-genetics-group-detail' group_id=group.id %}" style="font-size: 1.2em; font-weight: bold;">
+                    {{ group.name }}
+                </a>
+                <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    <span>{{ group.genetic_data.count }} dataset(s)</span> •
+                    <span>Created {{ group.created_at|date:"F d, Y" }}</span>
+                </div>
+            </div>
+        {% empty %}
+            <p>No molecular genetics groups available at the moment.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

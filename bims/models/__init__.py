@@ -57,3 +57,4 @@ from bims.models.decision_support_tool import *  # noqa
 from bims.models.geocontext_setting import GeocontextSetting
 from bims.models.biodiversity_threats import *  # noqa
 from bims.models.biodiversity_assessment import *  # noqa
+from bims.models.molecular_genetics import *  # noqa

@@ -91,10 +91,13 @@ from bims.models import (
     TaxonImage,
     WaterTemperature,
     TaxonExtraAttribute,
-    DecisionSupportTool, 
+    DecisionSupportTool,
     Unit,
     BiodiversityThreat,
     BiodiversityAssessment,
+    MolecularGeneticGroup,
+    MolecularGeneticData,
+    MolecularGeneticDownloadRequest
 )
 from bims.models.climate_data import ClimateData
 from bims.utils.fetch_gbif import merge_taxa_data
@@ -1636,3 +1639,6 @@ admin.site.register(ClimateData, ClimateDataAdmin)
 # RBIS Mods
 admin.site.register(BiodiversityThreat)
 admin.site.register(BiodiversityAssessment)
+admin.site.register(MolecularGeneticGroup)
+admin.site.register(MolecularGeneticData)
+admin.site.register(MolecularGeneticDownloadRequest)

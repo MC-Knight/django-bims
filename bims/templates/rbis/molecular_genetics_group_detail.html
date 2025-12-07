@@ -1,0 +1,169 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+{% load dict_extras %}
+
+{% block subtitle %}
+    {{ group.name }} - Molecular Genetics
+{% endblock %}
+
+{% block head %}
+    <link href="{% static "rbis/biodiversity_assessments.css" %}" rel="stylesheet">
+    <style>
+        .data-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .data-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .data-meta {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .data-actions {
+            margin-top: 10px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin-right: 5px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .btn-primary {
+            color: #fff;
+            background-color: #337ab7;
+            border-color: #2e6da4;
+        }
+        .btn-success {
+            color: #fff;
+            background-color: #5cb85c;
+            border-color: #4cae4c;
+        }
+        .btn-warning {
+            color: #fff;
+            background-color: #f0ad4e;
+            border-color: #eea236;
+        }
+        .btn-disabled {
+            color: #999;
+            background-color: #e0e0e0;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #f0ad4e;
+            color: white;
+        }
+        .status-approved {
+            background-color: #5cb85c;
+            color: white;
+        }
+        .status-rejected {
+            background-color: #d9534f;
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %}
+<div class="biodiversity-assessment-home">
+    <h1>{{ group.name }}</h1>
+
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'molecular-genetics-home' %}">&larr; Back to All Groups</a>
+    </div>
+
+    {% if is_superuser %}
+    <div class="admin-actions" style="margin-bottom: 20px;">
+        <a href="{% url 'add-molecular-genetics-data' group_id=group.id %}" class="btn btn-primary">
+            <i class="fa fa-plus"></i> Add New Data
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="genetic-data-list">
+        {% for data in genetic_data %}
+            <div class="data-item">
+                <div class="data-title">{{ data.title }}</div>
+                <div class="data-meta">
+                    <span><i class="fa fa-calendar"></i> Uploaded {{ data.created_at|date:"F d, Y" }}</span>
+                    {% if data.uploaded_by %}
+                        <span style="margin-left: 15px;"><i class="fa fa-user"></i> By {{ data.uploaded_by.get_full_name|default:data.uploaded_by.username }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="data-actions">
+                    {% if is_superuser %}
+                        <a href="{{ data.file.url }}" class="btn btn-success" download>
+                            <i class="fa fa-download"></i> Download
+                        </a>
+                    {% else %}
+                        {% if data.id in user_requests %}
+                            {% with req=user_requests|get_item:data.id %}
+                                {% if req.status == 'approved' %}
+                                    <a href="{{ data.data.url }}" class="btn btn-success" download>
+                                        <i class="fa fa-download"></i> Download
+                                    </a>
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif req.status == 'pending' %}
+                                    <span class="btn btn-disabled">
+                                        <i class="fa fa-clock-o"></i> Request Pending
+                                    </span>
+                                    <span class="status-badge status-pending">Pending</span>
+                                {% elif req.status == 'rejected' %}
+                                    <a href="{% url 'request-molecular-genetics-download' data_id=data.id %}" class="btn btn-warning">
+                                        <i class="fa fa-refresh"></i> Request Again
+                                    </a>
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            <a href="{% url 'request-molecular-genetics-download' data_id=data.id %}" class="btn btn-primary">
+                                <i class="fa fa-key"></i> Request Download Access
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <p>No genetic data available for this group yet.</p>
+        {% endfor %}
+    </div>
+
+    {% if not is_superuser %}
+    <div style="margin-top: 30px; padding: 15px; background-color: #e7f3fe; border-left: 4px solid #2196F3; border-radius: 4px;">
+        <h4 style="margin-top: 0;"><i class="fa fa-info-circle"></i> Download Access</h4>
+        <p>
+            To download molecular genetics data, you need to submit a request explaining your intended use.
+            Administrators will review your request and approve or reject it accordingly.
+        </p>
+        <p>
+            You can view all your download requests and their status on the
+            <a href="{% url 'molecular-genetics-download-requests' %}">Download Requests page</a>.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+NEW MOLECULAR GENETICS DOWNLOAD REQUEST
+========================================
+
+Hello Admin,
+
+A new download request has been submitted for molecular genetics data.
+
+REQUEST DETAILS
+---------------
+Requester: {{ user_name }} ({{ user_email }})
+Data Title: {{ data_title }}
+Specie: {{ group_name }}
+Requested At: {{ requested_at }}
+
+REASON FOR REQUEST
+------------------
+{{ reason }}
+
+REVIEW REQUEST
+--------------
+{{ review_url }}
+
+Please review this request and approve or reject it from the admin panel.
+
+---
+This is an automated email. Please do not reply.

@@ -96,6 +96,16 @@ from bims.views.physico_chemical import PhysicoChemicalView, \
 # rbis mods
 from bims.views.biodiversity_threats import biodiversity_threats_view, biodiversity_threat_detail_view
 from bims.views.biodiversity_assessments import biodiversity_assessments_view, biodiversity_assesment_detail_view
+from bims.views.molecular_genetics import (
+    molecular_genetics_home,
+    molecular_genetics_group_detail,
+    add_molecular_genetics_group,
+    add_molecular_genetics_data,
+    request_molecular_genetics_download,
+    molecular_genetics_download_requests,
+    approve_molecular_genetics_download,
+    reject_molecular_genetics_download
+)
 
 
 urlpatterns = [
@@ -275,6 +285,22 @@ urlpatterns = [
         name='biodiversity-assessments'),
     url(r'^biodiversity-assessment/(?P<pk>\d+)/$', biodiversity_assesment_detail_view,
         name='biodiversity-assessment-detail'),
+    url(r'^molecular-genetics/$', molecular_genetics_home,
+        name='molecular-genetics-home'),
+    url(r'^molecular-genetics/group/(?P<group_id>\d+)/$', molecular_genetics_group_detail,
+        name='molecular-genetics-group-detail'),
+    url(r'^molecular-genetics/add-group/$', add_molecular_genetics_group,
+        name='add-molecular-genetics-group'),
+    url(r'^molecular-genetics/group/(?P<group_id>\d+)/add-data/$', add_molecular_genetics_data,
+        name='add-molecular-genetics-data'),
+    url(r'^molecular-genetics/data/(?P<data_id>\d+)/request-download/$', request_molecular_genetics_download,
+        name='request-molecular-genetics-download'),
+    url(r'^molecular-genetics/download-requests/$', molecular_genetics_download_requests,
+        name='molecular-genetics-download-requests'),
+    url(r'^molecular-genetics/download-requests/(?P<request_id>\d+)/approve/$', approve_molecular_genetics_download,
+        name='approve-molecular-genetics-download'),
+    url(r'^molecular-genetics/download-requests/(?P<request_id>\d+)/reject/$', reject_molecular_genetics_download,
+        name='reject-molecular-genetics-download'),
 ]
 
 # Api urls
