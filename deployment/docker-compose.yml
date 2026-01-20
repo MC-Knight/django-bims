@@ -32,7 +32,7 @@ x-common-django:
     - C_FORCE_ROOT=1
     - CONTACT_US_EMAIL=${ADMIN_EMAILS:-tetobobo43@gmail.com}
     - ALLOWED_HOSTS=['*']
-    - DATABASE_HOST=db
+    - DATABASE_HOST=bims_prod_db
     - DATABASE_NAME=${POSTGRES_DBNAME:-gis}
     - DATABASE_PASSWORD=${POSTGRES_PASS:-docker}
     - DATABASE_URL=postgis://${POSTGRES_USER:-docker}:${POSTGRES_PASS:-docker}@db:5432/${POSTGRES_DBNAME:-gis}
@@ -169,9 +169,9 @@ services:
     environment:
       - DUMPPREFIX=PG_bims
       - PGUSER=${POSTGRES_USER:-docker}
-      - PGPASSWORD=${POSTGRES_PASS:-docker} 
+      - PGPASSWORD=${POSTGRES_PASS:-docker}
       - PGPORT=5432
-      - PGHOST=db
+      - PGHOST=bims_prod_db
       - PGDATABASE=${POSTGRES_DBNAME:-gis}
     volumes:
       - /opt/bims/backups:/backups
