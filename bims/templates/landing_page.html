@@ -49,7 +49,7 @@
     {% include 'landing_page_dashboard.html' %}
     {% include 'general_system_status.html' %}
     {% endif %}
-    
+
 
     <div id="citation" class="citation">
         <h1>To Cite CoEB:</h1>
@@ -57,13 +57,19 @@
         <p>Retrieved Day/Month/Year, from Biodiversity Information System: <a href="{{ domain_name }}">http://rbis.ur.ac.rw</a></p>
     </div>
 
+    <div id="note-guidelines" class="note-guidelines">
+        <h1>Note</h1>
+        <p>The RBIS follows the accessibility guidelines put forth by the Rwanda Information Society Authority (RISA)</p>
+        <p><a href="https://guidelines.risa.gov.rw/books/government-of-rwanda-websites-guideline/page/accessibility" target="_blank">https://guidelines.risa.gov.rw/books/government-of-rwanda-websites-guideline/page/accessibility</a></p>
+    </div>
+
     <div class="rbis-whatis">
         <img src="{% static 'new_images/fbis2.png' %}" alt="Taxa Icon"/>
         <div class="rbis-whatis-text">
             <h1>What is RBIS?</h1>
             <p>The RBIS is a powerful, visual, data-rich information system for hosting and serving biodiversity data in Rwanda. It serves as a platform for the inventory and maintenance of data, thereby facilitating the evaluation of long-term change in biodiversity and ecosystem condition, and guiding future monitoring strategies and management decisions.</p>
-           
-        </div>  
+
+        </div>
     </div>
 
     <!-- {% if custom_theme.partners.all %}
@@ -88,13 +94,13 @@
         </div>
     </div>
     {% endif %} -->
-    
+
 
 
 
     <div id="section-wrapper">
         <div id="header-wrapper">
-            
+
 
             {% if custom_theme.is_footer_enabled %}
                 <footer>

@@ -12,7 +12,7 @@
     align-items: flex-start;
     justify-content: center;
     padding: 10px 60px;
-    gap: 20px;   
+    gap: 20px;
 }
 
 .rbis-home h1{
@@ -223,6 +223,40 @@
 }
 
 .citation a{
+    color: #00697d;
+    text-decoration: none;
+}
+
+
+.note-guidelines{
+    background-color: #f8f9fa;
+    padding: 10px 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.note-guidelines h1{
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #00697d;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+}
+
+.note-guidelines p{
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #595959;
+    font-size: 18px;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.note-guidelines a{
     color: #00697d;
     text-decoration: none;
 }
