@@ -79,6 +79,12 @@ from bims.views.source_reference import (
     AddSourceReferenceView,
     DeleteSourceReferenceView
 )
+from bims.views.dataset import (
+    DataSetListView,
+    AddDataSetView,
+    EditDataSetView,
+    DeleteDataSetView,
+)
 from bims.views.profile import ProfileView, moderator_contacted
 from bims.views.backups_management import BackupsManagementView
 from bims.views.summary_report import SummaryReportView
@@ -301,6 +307,18 @@ urlpatterns = [
         name='approve-molecular-genetics-download'),
     url(r'^molecular-genetics/download-requests/(?P<request_id>\d+)/reject/$', reject_molecular_genetics_download,
         name='reject-molecular-genetics-download'),
+    url(r'^datasets/$',
+        DataSetListView.as_view(),
+        name='dataset-list'),
+    url(r'^datasets/add/$',
+        AddDataSetView.as_view(),
+        name='add-dataset'),
+    url(r'^datasets/(?P<pk>\d+)/edit/$',
+        EditDataSetView.as_view(),
+        name='edit-dataset'),
+    url(r'^datasets/delete/$',
+        DeleteDataSetView.as_view(),
+        name='delete-dataset'),
 ]
 
 # Api urls

@@ -1,0 +1,241 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+
+{% block subtitle %}Datasets{% endblock %}
+
+{% block pre-head %}
+    <link rel="stylesheet" href="{% static "lib/select2-4.1.0/css/select2.min.css" %}">
+    <style>
+        .card {
+            margin-bottom: 10px;
+        }
+        .custom-control-label {
+            max-width: 80%;
+        }
+        .dataset-filter-title {
+            margin-bottom: 0 !important;
+            font-weight: bold;
+        }
+        .dataset-type-label {
+            text-transform: uppercase;
+            font-weight: 300;
+            font-size: 10pt;
+        }
+        .badge-count {
+            font-size: 9pt;
+            padding: 5px 10px;
+        }
+        .badge-zero {
+            background-color: #b8b8b8;
+        }
+        .active.active:hover {
+            color: white;
+        }
+        .input-group-append:hover {
+            cursor: pointer;
+        }
+        .dataset-meta {
+            color: #8a8a8a;
+            font-size: 0.9em;
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %}
+<div class="body-container container">
+    <div class="dashboard-title">
+        <h2>Datasets&nbsp;<span class="vertical-separator"></span>{{ page_obj.paginator.count }} Result{% if page_obj.paginator.count > 1 %}s{% endif %}</h2>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success" role="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Sidebar filters -->
+        <div class="col-lg-3 col-md-4 col-xs-12">
+            <!-- Search -->
+            <div class="input-group md-form form-sm form-2 pl-0" style="margin-bottom: 10px;">
+                <input class="form-control my-0 py-1 red-border"
+                       type="text" placeholder="Search"
+                       aria-label="Search" value="{{ search }}" id="search-input">
+                <div class="input-group-append">
+                    <span class="input-group-text red lighten-3" id="search-btn">
+                        <i class="fa fa-search text-grey" aria-hidden="true"></i>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Type filter -->
+            <div class="card">
+                <article class="card-group-item">
+                    <header class="card-header">
+                        <h6 class="title dataset-filter-title">Type</h6>
+                    </header>
+                    <div class="filter-content">
+                        <div class="card-body" data-filter="type">
+                            {% for ds_type in type_filters %}
+                            <div class="custom-control custom-checkbox">
+                                <span class="float-right badge badge-light round">{{ ds_type.count }}</span>
+                                <input type="checkbox"
+                                       value="{{ ds_type.key }}"
+                                       class="custom-control-input"
+                                       id="type-{{ ds_type.key }}"
+                                       {% if ds_type.selected %}checked{% endif %}>
+                                <label class="custom-control-label" for="type-{{ ds_type.key }}">
+                                    {{ ds_type.title }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Author filter -->
+            <div class="card">
+                <article class="card-group-item">
+                    <header class="card-header">
+                        <h6 class="title dataset-filter-title">Author(s)</h6>
+                    </header>
+                    <div class="filter-content">
+                        <div class="card-body">
+                            <select class="form-control owner-auto-complete" multiple="multiple">
+                                {% for author in selected_authors %}
+                                    <option selected value="{{ author.id }}">{{ author.first_name }} {{ author.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <br/>
+                            <button class="btn btn-primary apply-author-filter mt-2" style="width: 100%">Apply</button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <!-- Dataset list -->
+        <div class="col-lg-9 col-md-8 col-xs-12">
+            {% if perms.bims.add_dataset %}
+                <a href="/datasets/add/" class="btn btn-info" style="margin-bottom: 10px">
+                    <i class="fa fa-plus"></i>&nbsp;Add Dataset
+                </a>
+            {% endif %}
+
+            {% for dataset in object_list %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="dataset-type-label">{{ dataset.type_display }} Dataset</p>
+                            <h5 class="card-title">{{ dataset.title }}</h5>
+                            {% if dataset.source %}
+                                <p class="dataset-meta">Source: {{ dataset.source }}</p>
+                            {% endif %}
+                            <p class="dataset-meta">
+                                {% if dataset.year %}
+                                    <i class="fa fa-calendar" aria-hidden="true"></i> {{ dataset.year }}
+                                    {% if dataset.authors_string %}<span class="vertical-separator"></span>{% endif %}
+                                {% endif %}
+                                {% if dataset.authors_string %}
+                                    <i class="fa fa-users" aria-hidden="true"></i> {{ dataset.authors_string }}
+                                {% endif %}
+                            </p>
+                            {% if dataset.notes %}
+                                <p class="dataset-meta"><em>{{ dataset.notes }}</em></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="card-text">
+                        {% if dataset.file %}
+                            <a href="{{ dataset.file.url }}" class="badge badge-info badge-count" target="_blank">
+                                <i class="fa fa-download"></i>&nbsp;Download File
+                            </a>
+                        {% else %}
+                            <span class="badge badge-info badge-count badge-zero">No file</span>
+                        {% endif %}
+                        {% if perms.bims.change_dataset %}
+                            <div class="float-right">
+                                <a href="/datasets/{{ dataset.id }}/edit/?next={{ request.get_full_path|urlencode }}"
+                                   class="badge badge-primary badge-count">Update</a>
+                            </div>
+                            <div class="float-right">
+                                <a href="#" class="badge badge-danger badge-count delete-dataset"
+                                   data-dataset-id="{{ dataset.id }}">&nbsp;Delete&nbsp;</a>&nbsp;
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">No datasets found.</div>
+            {% endfor %}
+
+            <div class="container">
+                <div class="paginator-wrapper">
+                    {% include 'paginator_template.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% include 'footer.html' %}
+{% endblock %}
+
+{% block foot %}
+    <script src="{% static "js/libs/jquery/jquery-3.3.1.min.js" %}"></script>
+    <script src="{% static "js/libs/bootstrap-4.0.0/js/bootstrap.min.js" %}"></script>
+    <script src="{% static "lib/select2-4.1.0/js/select2.full.min.js" %}"></script>
+    <script src="{% static "js/utils/insert_param_to_url.js" %}"></script>
+    <script src="{% static "js/non_requirejs/multi_author_select.js" %}"></script>
+    <script>
+        const csrfToken = '{{ csrf_token }}';
+
+        // Type checkbox filter
+        $('.custom-control-input').change(function (e) {
+            const $parent = $(e.target).parent().parent();
+            const filterName = $parent.data('filter');
+            const checkedVals = $parent.find(':checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            insertParam(filterName, checkedVals);
+        });
+
+        // Search
+        $('#search-btn').click(function () {
+            insertParam('q', $('#search-input').val());
+        });
+        $('#search-input').on('keypress', function (e) {
+            if (e.which === 13) {
+                insertParam('q', $(this).val());
+            }
+        });
+
+        // Author filter apply
+        $('.apply-author-filter').click(function (e) {
+            const authorIds = $(e.target).parent()
+                .find('.author_result')
+                .map(function () { return $(this).data('author-id'); })
+                .get();
+            insertParam('collectors', authorIds.join(','));
+        });
+
+        // Delete dataset
+        $('.delete-dataset').click(function (e) {
+            e.preventDefault();
+            const datasetId = $(e.target).data('dataset-id');
+            if (!confirm('Are you sure you want to delete this dataset?')) return;
+            $.ajax({
+                url: '/datasets/delete/',
+                headers: { 'X-CSRFToken': csrfToken },
+                type: 'POST',
+                data: { dataset_id: datasetId },
+                success: function () { location.reload(); },
+                error: function () { alert('Failed to delete dataset.'); }
+            });
+        });
+    </script>
+{% endblock %}

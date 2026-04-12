@@ -1,0 +1,353 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+
+{% block subtitle %}{% if is_edit %}Edit Dataset{% else %}Add Dataset{% endif %}{% endblock %}
+
+{% block pre-head %}
+    <link rel="stylesheet" href="{% static "lib/select2-4.1.0/css/select2.min.css" %}">
+    <link href="{% static "css/dashboard_buttons.css" %}" rel="stylesheet">
+    <style>
+        .required-input label::after {
+            content: " *";
+            color: red;
+        }
+        .author-tag {
+            display: inline-block;
+            background: #007bff;
+            color: #fff;
+            border-radius: 3px;
+            padding: 2px 8px;
+            margin: 2px;
+            font-size: 0.85em;
+        }
+        .author-tag .remove-author {
+            cursor: pointer;
+            margin-left: 6px;
+            font-weight: bold;
+        }
+        #authors-container {
+            min-height: 38px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 5px;
+            margin-top: 8px;
+        }
+        .new-author-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            align-items: center;
+        }
+        .new-author-row input {
+            flex: 1;
+        }
+        #new-author-toggle {
+            font-size: 0.85em;
+            cursor: pointer;
+            color: #007bff;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        #new-author-form {
+            display: none;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 6px;
+        }
+        .section-hint {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        #file-hint {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %}
+<div class="body-container container">
+    <div class="dashboard-title">
+        <h2>{% if is_edit %}Edit Dataset{% else %}Add Dataset{% endif %}</h2>
+        <div class="dashboard-close"
+             onclick="window.location.href='{% if past_url %}{{ past_url }}{% else %}/datasets/{% endif %}'">
+            <i class="fa fa-times" aria-hidden="true"></i>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if 'dataset' in message.tags %}
+            <div class="alert alert-danger" role="alert">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10 col-12">
+            <form method="post" enctype="multipart/form-data" id="dataset-form">
+                {% csrf_token %}
+                <input type="hidden" name="author_ids" id="author_ids" value="">
+
+                <!-- Type -->
+                <div class="form-group required-input">
+                    <label for="id_type">Type</label>
+                    <select name="type" id="id_type" class="form-control">
+                        <option value="published" {% if form.type.value == 'published' %}selected{% endif %}>Published</option>
+                        <option value="unpublished" {% if form.type.value == 'unpublished' or not form.type.value %}selected{% endif %}>Unpublished</option>
+                    </select>
+                </div>
+
+                <!-- Title -->
+                <div class="form-group required-input">
+                    <label for="id_title">Title</label>
+                    <input type="text" name="title" id="id_title" class="form-control"
+                           placeholder="Enter dataset title"
+                           value="{{ form.title.value|default_if_none:'' }}" required>
+                    {% if form.title.errors %}
+                        <div class="invalid-feedback d-block">{{ form.title.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Source -->
+                <div class="form-group" id="source-group">
+                    <label for="id_source">Source</label>
+                    <input type="text" name="source" id="id_source" class="form-control"
+                           placeholder="Enter source (e.g. journal, organisation)"
+                           value="{{ form.source.value|default_if_none:'' }}">
+                </div>
+
+                <!-- File (Excel / CSV only) -->
+                <div class="form-group">
+                    <label for="id_file">File</label>
+                    {% if is_edit and dataset.file %}
+                        <div class="mb-1" id="current-file-info">
+                            <small class="text-muted">Current file:&nbsp;
+                                <a href="{{ dataset.file.url }}" target="_blank">{{ dataset.file.name|slice:"9:" }}</a>
+                            </small>
+                            &mdash; <small class="text-muted">Upload a new file below to replace it.</small>
+                        </div>
+                    {% endif %}
+                    <input type="file" name="file" id="id_file" class="form-control"
+                           accept=".xlsx,.xls,.csv">
+                    <small id="file-hint">Only Excel (.xlsx, .xls) or CSV (.csv) files are accepted.</small>
+                    {% if form.file.errors %}
+                        <div class="invalid-feedback d-block">{{ form.file.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Year -->
+                <div class="form-group">
+                    <label for="id_year">Year</label>
+                    <input type="number" name="year" id="id_year" class="form-control"
+                           placeholder="e.g. 2024" min="1900" max="2100"
+                           value="{{ form.year.value|default_if_none:'' }}">
+                    {% if form.year.errors %}
+                        <div class="invalid-feedback d-block">{{ form.year.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div class="form-group">
+                    <label for="id_notes">Notes</label>
+                    <textarea name="notes" id="id_notes" class="form-control" rows="3"
+                              placeholder="Enter any additional notes">{{ form.notes.value|default_if_none:'' }}</textarea>
+                </div>
+
+                <!-- Authors -->
+                <div class="form-group">
+                    <label>Authors <span style="color:red">*</span></label>
+                    <p class="section-hint">Search and select existing authors, or add a new one below.</p>
+                    <select id="author-search" class="form-control" style="width:100%">
+                    </select>
+                    <div id="authors-container"></div>
+                    <div id="authors-error" class="invalid-feedback" style="display:none">At least one author is required.</div>
+                    <span id="new-author-toggle"><i class="fa fa-plus-circle"></i> Add author not in the system</span>
+                    <div id="new-author-form">
+                        <div class="new-author-row">
+                            <input type="text" id="new-author-first" class="form-control form-control-sm"
+                                   placeholder="First name">
+                            <input type="text" id="new-author-last" class="form-control form-control-sm"
+                                   placeholder="Last name">
+                            <button type="button" class="btn btn-sm btn-success" id="add-new-author-btn">Add</button>
+                        </div>
+                    </div>
+                    <div id="new-authors-inputs"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    <i class="fa fa-save"></i>&nbsp;Save Dataset
+                </button>
+                <a href="/datasets/" class="btn btn-secondary ml-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% include 'footer.html' %}
+{% endblock %}
+
+{% block foot %}
+    <script src="{% static "js/libs/jquery/jquery-3.3.1.min.js" %}"></script>
+    <script src="{% static "js/libs/bootstrap-4.0.0/js/bootstrap.min.js" %}"></script>
+    <script src="{% static "lib/select2-4.1.0/js/select2.full.min.js" %}"></script>
+    <script>
+        const existingAuthors = {% if existing_authors %}{{ existing_authors|safe }}{% else %}[]{% endif %};
+
+        const selectedAuthors = {};
+
+        function renderAuthors() {
+            const $container = $('#authors-container');
+            $container.empty();
+            const ids = [];
+            $.each(selectedAuthors, function (id, name) {
+                ids.push(id);
+                $container.append(
+                    $('<span class="author-tag">')
+                        .text(name)
+                        .append(
+                            $('<span class="remove-author">&times;</span>')
+                                .data('id', id)
+                                .on('click', function () {
+                                    delete selectedAuthors[$(this).data('id')];
+                                    renderAuthors();
+                                })
+                        )
+                );
+            });
+            $('#author_ids').val(ids.join(','));
+            if (ids.length > 0 || $('#new-authors-inputs input').length > 0) {
+                $('#authors-error').hide();
+            }
+        }
+
+        // Pre-populate on page load
+        existingAuthors.forEach(function (a) {
+            selectedAuthors[a.id] = a.name;
+        });
+        renderAuthors();
+
+        function formatAuthorResult(author) {
+            if (author.loading) return author.text;
+            return $('<span>').text(
+                (author.first_name || '') + ' ' + (author.last_name || '')
+            );
+        }
+
+        function formatAuthorSelection(author) {
+            return author.text || ((author.first_name || '') + ' ' + (author.last_name || ''));
+        }
+
+        $('#author-search').select2({
+            ajax: {
+                url: '/user-autocomplete/',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { term: params.term }; },
+                processResults: function (data) {
+                    return { results: data };
+                },
+                cache: true
+            },
+            placeholder: 'Search for an author',
+            minimumInputLength: 3,
+            templateResult: formatAuthorResult,
+            templateSelection: formatAuthorSelection,
+            allowClear: true
+        }).on('select2:select', function (e) {
+            const data = e.params.data;
+            const id = data.id;
+            const name = (data.first_name || data.text || '') + ' ' + (data.last_name || '');
+            selectedAuthors[id] = name.trim();
+            renderAuthors();
+            // Reset the select2 so it's ready for next pick
+            $(this).val(null).trigger('change');
+        });
+
+        // ---- New author (not in system) ----
+        let newAuthorCount = 0;
+
+        $('#new-author-toggle').on('click', function () {
+            $('#new-author-form').slideToggle(150);
+        });
+
+        $('#add-new-author-btn').on('click', function () {
+            const first = $('#new-author-first').val().trim();
+            const last = $('#new-author-last').val().trim();
+            if (!first) {
+                alert('First name is required.');
+                return;
+            }
+            const fullName = (first + ' ' + last).trim();
+            const key = 'new_author_' + newAuthorCount;
+            newAuthorCount++;
+
+            // Add visible tag
+            $('#authors-container').append(
+                $('<span class="author-tag">')
+                    .text(fullName)
+                    .append(
+                        $('<span class="remove-author">&times;</span>')
+                            .data('key', key)
+                            .on('click', function () {
+                                $('input[name="' + $(this).data('key') + '"]').remove();
+                                $(this).closest('.author-tag').remove();
+                            })
+                    )
+            );
+
+            // Add hidden input so it's submitted with the form
+            $('#new-authors-inputs').append(
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: key,
+                    value: fullName
+                })
+            );
+
+            $('#new-author-first').val('');
+            $('#new-author-last').val('');
+            $('#new-author-form').slideUp(150);
+        });
+
+        // Allow Enter key in new-author inputs
+        $('#new-author-first, #new-author-last').on('keypress', function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#add-new-author-btn').click();
+            }
+        });
+
+        // ---- File validation ----
+        $('#id_file').on('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            const allowed = ['.xlsx', '.xls', '.csv'];
+            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            if (!allowed.includes(ext)) {
+                alert('Only Excel (.xlsx, .xls) or CSV (.csv) files are accepted.');
+                this.value = '';
+            }
+        });
+
+        // ---- Form submit ----
+        $('#dataset-form').on('submit', function (e) {
+            const title = $('#id_title').val().trim();
+            if (!title) {
+                e.preventDefault();
+                alert('Title is required.');
+                return;
+            }
+            const hasExisting = Object.keys(selectedAuthors).length > 0;
+            const hasNew = $('#new-authors-inputs input').length > 0;
+            if (!hasExisting && !hasNew) {
+                e.preventDefault();
+                $('#authors-error').show();
+                $('#authors-container')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        });
+    </script>
+{% endblock %}

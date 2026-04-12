@@ -97,7 +97,9 @@ from bims.models import (
     BiodiversityAssessment,
     MolecularGeneticGroup,
     MolecularGeneticData,
-    MolecularGeneticDownloadRequest
+    MolecularGeneticDownloadRequest,
+    Dataset,
+    DatasetAuthorship
 )
 from bims.models.climate_data import ClimateData
 from bims.utils.fetch_gbif import merge_taxa_data
@@ -1642,3 +1644,5 @@ admin.site.register(BiodiversityAssessment)
 admin.site.register(MolecularGeneticGroup)
 admin.site.register(MolecularGeneticData)
 admin.site.register(MolecularGeneticDownloadRequest)
+admin.site.register(Dataset)
+admin.site.register(DatasetAuthorship)
