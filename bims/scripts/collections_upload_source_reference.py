@@ -43,7 +43,8 @@ def process_source_reference(
         document_url = None,
         document_title = None,
         document_author = None,
-        source_year = None):
+        source_year = None,
+        user_cache = None):
     """Processing source reference data from csv"""
     source_reference = None
     document_id = 0
@@ -102,7 +103,7 @@ def process_source_reference(
                 month=1,
                 day=1
             )
-        authors = create_users_from_string(document_author)
+        authors = create_users_from_string(document_author, cache=user_cache)
         if len(authors) > 0:
             author = authors[0]
         else:
@@ -195,7 +196,7 @@ def process_source_reference(
                     type='article',
                     **optional_values
                 )
-                authors = create_users_from_string(document_author)
+                authors = create_users_from_string(document_author, cache=user_cache)
                 rank = 1
                 for author in authors:
                     _author, _ = Author.objects.get_or_create(

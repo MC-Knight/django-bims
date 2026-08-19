@@ -96,7 +96,8 @@ class PhysicalChemicalProcess(OccurrenceProcessor):
                 document_link=DataCSVUpload.row_value(row, DOCUMENT_UPLOAD_LINK),
                 document_url=DataCSVUpload.row_value(row, DOCUMENT_URL),
                 document_author=DataCSVUpload.row_value(row, DOCUMENT_AUTHOR),
-                source_year=DataCSVUpload.row_value(row, SOURCE_YEAR)
+                source_year=DataCSVUpload.row_value(row, SOURCE_YEAR),
+                user_cache=self.user_cache
             )
             if message and not source_reference:
                 # Source reference data from csv exists but not created
@@ -114,7 +115,8 @@ class PhysicalChemicalProcess(OccurrenceProcessor):
         # -- Processing collectors
         custodian = DataCSVUpload.row_value(row, CUSTODIAN)
         collectors = create_users_from_string(
-            DataCSVUpload.row_value(row, COLLECTOR_OR_OWNER))
+            DataCSVUpload.row_value(row, COLLECTOR_OR_OWNER),
+            cache=self.user_cache)
         if not collectors:
             self.handle_error(
                 row=row,
