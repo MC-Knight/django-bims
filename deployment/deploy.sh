@@ -26,11 +26,20 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 
-if [[ -z "${EMAIL_HOST:-}" ]]; then
-    echo "WARNING: EMAIL_HOST is empty in this shell's environment."
-    echo "         If you exported EMAIL_* vars before running this with plain"
-    echo "         'sudo', re-run with 'sudo -E' instead, or the containers"
-    echo "         will start with blank email settings."
+REQUIRED_EMAIL_VARS=(EMAIL_HOST EMAIL_HOST_USER EMAIL_HOST_PASSWORD EMAIL_PORT EMAIL_SUBJECT_PREFIX)
+missing=()
+for var in "${REQUIRED_EMAIL_VARS[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+        missing+=("${var}")
+    fi
+done
+if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "ERROR: the following env vars are not set in this (root) shell: ${missing[*]}" >&2
+    echo "       You exported them, then likely ran plain 'sudo' - which starts root" >&2
+    echo "       with a clean environment and drops everything you exported." >&2
+    echo "       Export the vars, then re-run using 'sudo -E' so they carry through:" >&2
+    echo "         sudo -E bash deployment/deploy.sh" >&2
+    exit 1
 fi
 
 # uwsgi, worker, geocontextworker and searchworker all run from the same
