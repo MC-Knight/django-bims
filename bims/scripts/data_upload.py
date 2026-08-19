@@ -194,16 +194,27 @@ class DataCSVUpload(object):
         Read and process data from csv file
         """
         index = 1
+        # Checking the cancel flag and persisting progress on every single
+        # row means two extra DB round-trips per row. Throttling this to
+        # every N rows (plus always on the last row) keeps the progress bar
+        # and cancel button responsive while cutting DB load during large
+        # uploads.
+        progress_check_interval = 10
         for row in self.csv_dict_reader:
-            if UploadSession.objects.get(id=self.upload_session.id).canceled:
-                print('Canceled')
-                return
             logger.debug(row)
-            self.upload_session.progress = '{index}/{total}'.format(
-                index=index,
-                total=self.total_rows
-            )
-            self.upload_session.save()
+            if (index % progress_check_interval == 0 or
+                    index == self.total_rows):
+                canceled = UploadSession.objects.filter(
+                    id=self.upload_session.id
+                ).values_list('canceled', flat=True).first()
+                if canceled:
+                    print('Canceled')
+                    return
+                self.upload_session.progress = '{index}/{total}'.format(
+                    index=index,
+                    total=self.total_rows
+                )
+                self.upload_session.save(update_fields=['progress'])
             index += 1
             self.process_row(row=row)
 

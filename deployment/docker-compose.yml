@@ -115,8 +115,8 @@ services:
     <<: *default-common-django
     container_name: bims_prod_worker
     entrypoint: [ ]
-    hostname: worker
-    command: celery worker --app=bims.celery:app -Q update -B -l debug
+    hostname: updateworker
+    command: celery worker --app=bims.celery:app -n update@%h -Q update -l info --max-tasks-per-child=100
     depends_on:
       - db
       - geoserver
@@ -131,8 +131,8 @@ services:
     <<: *default-common-django
     container_name: bims_prod_geocontextworker
     entrypoint: [ ]
-    hostname: worker
-    command: celery worker --app=bims.celery:app --schedule /home/geocontext-scheduler/celerybeat-schedule -Q geocontext -B -l debug
+    hostname: geocontextworker
+    command: celery worker --app=bims.celery:app -n geocontext@%h --schedule /home/geocontext-scheduler/celerybeat-schedule -Q geocontext -B -l info --max-tasks-per-child=100
     depends_on:
       - db
       - geoserver
@@ -148,8 +148,8 @@ services:
     <<: *default-common-django
     container_name: bims_prod_searchworker
     entrypoint: [ ]
-    hostname: worker
-    command: celery worker --app=bims.celery:app -Q search -B -l debug
+    hostname: searchworker
+    command: celery worker --app=bims.celery:app -n search@%h -Q search -l info --max-tasks-per-child=100
     depends_on:
       - db
       - geoserver

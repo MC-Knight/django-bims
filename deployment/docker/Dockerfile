@@ -17,30 +17,26 @@ RUN echo "Updating apt-get" && \
     apt-get install -y libgdal-dev libcurl4-gnutls-dev librtmp-dev && \
     echo "Installing healthceck dependencies" && \
     apt-get install -y curl && \
-    echo "Python server" && \
-    pip install uwsgi && \
     apt-get install -y git && \
     echo "Node js" && \
     curl -sL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh && \
     bash nodesource_setup.sh && \
     apt-get install -y nodejs && \
+    echo "Installing remaining build dependencies" && \
+    apt-get install -y \
+        libfreetype6-dev \
+        libpng-dev \
+        pkg-config \
+        python3-dev \
+        build-essential && \
     echo "Removing build dependencies and cleaning up" && \
     # TODO : cleanup apt-get with something like apt-get -y --purge autoremove gcc make libc-dev musl-dev libpcre3 libpcre3-dev g++ && \
     apt-get -y --purge autoremove make libc-dev musl-dev g++ && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf ~/.cache/pip
 
-RUN apt-get update && apt-get install -y \
-    libfreetype6-dev \
-    libpng-dev \
-    pkg-config \
-    python3-dev \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
-RUN pip install --no-cache-dir -r /REQUIREMENTS.txt \
-    && pip install --no-cache-dir uwsgi
+RUN pip install --no-cache-dir -r /REQUIREMENTS.txt
 
 #USER www-data
 ADD . /home/web/django_project

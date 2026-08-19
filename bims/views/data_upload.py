@@ -100,11 +100,10 @@ class DataUploadStatusView(APIView):
     """
 
     def get(self, request, session_id, *args):
-        try:
-            session = UploadSession.objects.get(
-                id=session_id
-            )
-        except UploadSession.DoesNotExist:
+        session = UploadSession.objects.filter(
+            id=session_id
+        ).only('token', 'progress', 'processed').first()
+        if not session:
             raise Http404('No session found')
         return Response({
             'token': session.token,
