@@ -366,7 +366,8 @@ class DOILoader(BaseLoader):
     def load_records(self, DOIs=None):
         """Load all crossref items as valid records"""
 
-        records = cn.content_negotiation(ids=DOIs, format='citeproc-json')
+        records = cn.content_negotiation(
+            ids=DOIs, format='citeproc-json', timeout=10)
         # Records might be a str or unicode (python 2)
         if not isinstance(records, list):
             records = [records, ]

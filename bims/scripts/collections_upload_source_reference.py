@@ -150,7 +150,7 @@ def process_source_reference(
                 )
             except (
                     DOILoaderError,
-                    requests.exceptions.HTTPError) as e:
+                    requests.exceptions.RequestException) as e:
                 print(e)
             finally:
                 if not entry:
