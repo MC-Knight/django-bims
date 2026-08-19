@@ -43,10 +43,12 @@ def get_species(gbif_id):
     """
     api_url = 'http://api.gbif.org/v1/species/' + str(gbif_id)
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)
         json_result = response.json()
         return json_result
-    except (HTTPError, KeyError, simplejson.errors.JSONDecodeError) as e:
+    except (
+            HTTPError, KeyError, simplejson.errors.JSONDecodeError,
+            requests.exceptions.RequestException) as e:
         print(e)
         return None
 
@@ -61,10 +63,12 @@ def get_vernacular_names(species_id):
         str(species_id)
     )
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)
         json_result = response.json()
         return json_result
-    except (HTTPError, KeyError, simplejson.errors.JSONDecodeError) as e:
+    except (
+            HTTPError, KeyError, simplejson.errors.JSONDecodeError,
+            requests.exceptions.RequestException) as e:
         print(e)
         return None
 
@@ -78,12 +82,12 @@ def get_children(key):
         key=key
     )
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)
         json_response = response.json()
         if json_response['results']:
             return json_response['results']
         return None
-    except (HTTPError, KeyError) as e:
+    except (HTTPError, KeyError, requests.exceptions.RequestException) as e:
         print(e)
         return None
 
@@ -106,7 +110,8 @@ def find_species(
         response = species.name_lookup(
             q=original_species_name,
             limit=50,
-            rank=rank
+            rank=rank,
+            timeout=10
         )
         accepted_data = None
         synonym_data = None
@@ -175,6 +180,8 @@ def find_species(
         print('Species not found')
     except AttributeError:
         print('error')
+    except requests.exceptions.RequestException as e:
+        print(e)
 
     return None
 
@@ -187,13 +194,13 @@ def search_exact_match(species_name):
     """
     api_url = 'http://api.gbif.org/v1/species/match?name=' + str(species_name)
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)
         json_result = response.json()
         if json_result and 'usageKey' in json_result:
             key = json_result['usageKey']
             return key
         return None
-    except (HTTPError, KeyError) as e:
+    except (HTTPError, KeyError, requests.exceptions.RequestException) as e:
         print(e)
         return None
 
@@ -373,17 +380,22 @@ def suggest_search(query_params):
         param=urllib.parse.urlencode(query_params)
     )
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, timeout=10)
         results = response.json()
         return results
-    except (HTTPError, KeyError) as e:
+    except (HTTPError, KeyError, requests.exceptions.RequestException) as e:
         print(e)
         return None
 
 
 def gbif_name_suggest(**kwargs):
     # Wrapper for pygbif name_suggest function
-    response = species.name_suggest(**kwargs)
+    kwargs.setdefault('timeout', 10)
+    try:
+        response = species.name_suggest(**kwargs)
+    except (HTTPError, requests.exceptions.RequestException) as e:
+        print(e)
+        return None
     if len(response) == 0:
         return None
     accepted_data = None
