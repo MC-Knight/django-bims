@@ -29,14 +29,16 @@ RUN echo "Updating apt-get" && \
         pkg-config \
         python3-dev \
         build-essential && \
-    echo "Removing build dependencies and cleaning up" && \
-    # TODO : cleanup apt-get with something like apt-get -y --purge autoremove gcc make libc-dev musl-dev libpcre3 libpcre3-dev g++ && \
-    apt-get -y --purge autoremove make libc-dev musl-dev g++ && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf ~/.cache/pip
+    rm -rf /var/lib/apt/lists/*
 
 ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
-RUN pip install --no-cache-dir -r /REQUIREMENTS.txt
+# gcc/g++/make etc. (installed above) must stay in place through this
+# pip install - it compiles C/C++ extensions (matplotlib, psycopg2, uWSGI)
+# from source. Only purge them afterward, once nothing left needs to compile.
+RUN pip install --no-cache-dir -r /REQUIREMENTS.txt && \
+    rm -rf ~/.cache/pip && \
+    apt-get -y --purge autoremove make libc-dev musl-dev g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 #USER www-data
 ADD . /home/web/django_project
