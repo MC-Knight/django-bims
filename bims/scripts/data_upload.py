@@ -216,7 +216,15 @@ class DataCSVUpload(object):
                 )
                 self.upload_session.save(update_fields=['progress'])
             index += 1
-            self.process_row(row=row)
+            try:
+                self.process_row(row=row)
+            except Exception as e:
+                # An unexpected error (e.g. a DB constraint) must not kill
+                # the whole upload - record it against this row, like any
+                # other row-level error, and keep going.
+                logger.error(
+                    'Unexpected error processing row %s: %s', index, e)
+                self.error_file(error_row=row, error_message=str(e))
 
         self.finish(self.csv_dict_reader.fieldnames)
 
