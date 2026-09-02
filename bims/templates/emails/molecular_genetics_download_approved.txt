@@ -3,7 +3,7 @@ DOWNLOAD REQUEST APPROVED
 
 Hello {{ requester_name }},
 
-Great news! Your download request for molecular genetics data has been approved.
+Great news! Your download request for eDNA sequences data has been approved.
 
 REQUEST DETAILS
 ---------------

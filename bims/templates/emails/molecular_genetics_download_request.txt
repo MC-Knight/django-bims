@@ -1,9 +1,9 @@
-NEW MOLECULAR GENETICS DOWNLOAD REQUEST
+NEW eDNA sequences DOWNLOAD REQUEST
 ========================================
 
 Hello Admin,
 
-A new download request has been submitted for molecular genetics data.
+A new download request has been submitted for eDNA sequences data.
 
 REQUEST DETAILS
 ---------------

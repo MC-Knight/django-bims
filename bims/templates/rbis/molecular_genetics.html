@@ -2,7 +2,7 @@
 {% load static from staticfiles %}
 
 {% block subtitle %}
-    Molecular Genetics
+    eDNA sequences
 {% endblock %}
 
 {% block head %}
@@ -11,10 +11,10 @@
 
 {% block body_content %}
 <div class="biodiversity-assessment-home">
-    <h1>Molecular Genetics</h1>
+    <h1>eDNA sequences</h1>
 
     <p>
-        This page provides access to molecular genetics data grouped by taxonomic categories.
+        This page provides access to eDNA sequences data grouped by taxonomic categories.
         Explore genetic information for different species groups including mammals, amphibians, and more.
     </p>
 
@@ -27,7 +27,7 @@
          {% endif %}
 
         <a href="{% url 'molecular-genetics-download-requests' %}" class="btn btn-primary">
-            &rarr; Molecular Genetics Data Download Requests
+            &rarr; eDNA sequences Data Download Requests
         </a>
     </div>
 
@@ -44,7 +44,7 @@
                 </div>
             </div>
         {% empty %}
-            <p>No molecular genetics groups available at the moment.</p>
+            <p>No eDNA sequences groups available at the moment.</p>
         {% endfor %}
     </div>
 </div>

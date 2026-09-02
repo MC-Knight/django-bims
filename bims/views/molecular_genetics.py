@@ -1,5 +1,5 @@
 """
-Views for Molecular Genetics module
+Views for eDNA sequences module
 """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -18,7 +18,7 @@ from bims.models.molecular_genetics import (
 
 
 def molecular_genetics_home(request):
-    """Main page showing all molecular genetics groups"""
+    """Main page showing all eDNA sequences groups"""
     groups = MolecularGeneticGroup.objects.all().order_by('-created_at')
     context = {
         'groups': groups,
@@ -52,7 +52,7 @@ def molecular_genetics_group_detail(request, group_id):
 
 @login_required
 def add_molecular_genetics_group(request):
-    """Add a new molecular genetics group (superuser only)"""
+    """Add a new eDNA sequences group (superuser only)"""
     if not request.user.is_superuser:
         messages.error(request, 'You do not have permission to add groups.')
         return redirect('molecular-genetics-home')
@@ -77,7 +77,7 @@ def add_molecular_genetics_group(request):
 
 @login_required
 def add_molecular_genetics_data(request, group_id):
-    """Add new data to a molecular genetics group (superuser only)"""
+    """Add new data to a eDNA sequences group (superuser only)"""
     if not request.user.is_superuser:
         messages.error(request, 'You do not have permission to add data.')
         return redirect('molecular-genetics-group-detail', group_id=group_id)
@@ -114,7 +114,7 @@ def add_molecular_genetics_data(request, group_id):
 
 @login_required
 def request_molecular_genetics_download(request, data_id):
-    """Request download access for molecular genetics data"""
+    """Request download access for eDNA sequences data"""
     genetic_data = get_object_or_404(MolecularGeneticData, id=data_id)
 
     # Check if user already has a request
@@ -241,7 +241,7 @@ def send_download_request_email(download_request):
     if not recipient_emails:
         return
 
-    subject = f'New Molecular Genetics Download Request from {download_request.get_formatted_requester_name()}'
+    subject = f'New eDNA sequences Download Request from {download_request.get_formatted_requester_name()}'
 
     context = {
         'user_name': download_request.user.get_full_name(),
@@ -291,7 +291,7 @@ def send_approval_email(download_request):
         'download_url': f"{site_url}/{data.file.url}",
     }
 
-    subject = f'Your Molecular Genetics Download Request Has Been Approved'
+    subject = f'Your eDNA sequences Download Request Has Been Approved'
 
     html_message = render_to_string('emails/molecular_genetics_download_approved.html', context)
     plain_message = render_to_string('emails/molecular_genetics_download_approved.txt', context)

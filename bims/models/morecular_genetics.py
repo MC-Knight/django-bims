@@ -1,5 +1,5 @@
 """
-Molecular genetics models.
+eDNA sequences models.
 """
 from django.db import models
 from django.conf import settings
@@ -7,7 +7,7 @@ from django.contrib.postgres.fields import JSONField
 
 
 class MolecularGeneticsGroup(models.Model):
-    """Model representing a molecular genetics group."""
+    """Model representing a eDNA sequences group."""
     name = models.CharField(max_length=255, unique=True)
     attributes = JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -17,13 +17,13 @@ class MolecularGeneticsGroup(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "Molecular Genetics Group"
-        verbose_name_plural = "Molecular Genetics Groups"
+        verbose_name = "eDNA sequences Group"
+        verbose_name_plural = "eDNA sequences Groups"
         ordering = ['-created_at']
 
 
 class MolecularGeneticsData(models.Model):
-    """Model representing molecular genetics data."""
+    """Model representing eDNA sequences data."""
     title = models.CharField(max_length=255)
     group = models.ForeignKey(
         MolecularGeneticsGroup,
@@ -46,13 +46,13 @@ class MolecularGeneticsData(models.Model):
         return self.title
 
     class Meta:
-        verbose_name = "Molecular Genetics Data"
-        verbose_name_plural = "Molecular Genetics Data"
+        verbose_name = "eDNA sequences Data"
+        verbose_name_plural = "eDNA sequences Data"
         ordering = ['-created_at']
 
 
 class MolecularGeneticsDownloadRequest(models.Model):
-    """Model representing a request to download molecular genetics data."""
+    """Model representing a request to download eDNA sequences data."""
     STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -106,7 +106,7 @@ class MolecularGeneticsDownloadRequest(models.Model):
         return f"Download request by {self.requester.first_name} {self.requester.last_name} on {self.requested_at}"
 
     class Meta:
-        verbose_name = "Molecular Genetics Download Request"
-        verbose_name_plural = "Molecular Genetics Download Requests"
+        verbose_name = "eDNA sequences Download Request"
+        verbose_name_plural = "eDNA sequences Download Requests"
         ordering = ['-requested_at']
         unique_together = ['genetic_data', 'requester']

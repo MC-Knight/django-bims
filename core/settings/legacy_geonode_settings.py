@@ -96,6 +96,8 @@ HOSTNAME = _surl.hostname
 if not SITEURL.endswith('/'):
     SITEURL = '{}/'.format(SITEURL)
 
+SITE_DOMAIN_NAME = os.getenv('SITE_DOMAIN_NAME', SITEURL)
+
 DATABASE_URL = os.getenv(
     'DATABASE_URL',
     'sqlite:///{path}'.format(

@@ -123,7 +123,7 @@
 <div class="requests-container">
     <h1 class="page-title">
         {% if is_superuser %}
-            Molecular Genetics Download Requests (All Users)
+            eDNA sequences Download Requests (All Users)
         {% else %}
             My Download Requests
         {% endif %}
@@ -209,7 +209,7 @@
                     {% endif %}
                 </p>
                 <a href="{% url 'molecular-genetics-home' %}" class="btn btn-primary" style="margin-top: 15px;">
-                    Browse Molecular Genetics Data
+                    Browse eDNA sequences Data
                 </a>
             </div>
         {% endfor %}
