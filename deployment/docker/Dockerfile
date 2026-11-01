@@ -44,7 +44,9 @@ ADD deployment/docker/REQUIREMENTS.txt /REQUIREMENTS.txt
 # gcc/g++/make etc. (installed above) must stay in place through this
 # pip install - it compiles C/C++ extensions (matplotlib, psycopg2, uWSGI)
 # from source. Only purge them afterward, once nothing left needs to compile.
-RUN pip install --no-cache-dir -r /REQUIREMENTS.txt && \
+# Generous timeout/retries: the production server's link to PyPI stalls at
+# times, and pip's defaults (15s, 5 retries) abort the whole build.
+RUN pip install --no-cache-dir --timeout 120 --retries 10 -r /REQUIREMENTS.txt && \
     rm -rf ~/.cache/pip && \
     apt-get -y --purge autoremove make libc-dev musl-dev g++ && \
     rm -rf /var/lib/apt/lists/*
@@ -57,7 +59,9 @@ WORKDIR /home/web/django_project
 # (bims/static/js/optimized.js) so the browser makes a single request
 # instead of a long chain of them. collectstatic picks it up at startup.
 RUN mkdir -p /tmp/jsbuild && cd /tmp/jsbuild && \
-    npm install --no-audit --no-fund --silent requirejs@2.3.6 terser@5 && \
+    npm install --no-audit --no-fund --silent \
+        --fetch-retries=5 --fetch-retry-maxtimeout=120000 \
+        requirejs@2.3.6 terser@5 && \
     node node_modules/requirejs/bin/r.js \
         -o /home/web/django_project/deployment/docker/requirejs.build.js && \
     node_modules/.bin/terser \
