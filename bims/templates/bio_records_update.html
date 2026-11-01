@@ -10,20 +10,20 @@
     <link href="{% static "css/non_validated_list.css" %}" rel="stylesheet">
     <link href="{% static "js/libs/ol-layerswitcher/ol3-layerswitcher.css" %}" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'js/libs/datepicker/datepicker.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{% static 'js/libs/font-awesome/css/font-awesome.min.css' %}">
     <link rel="stylesheet" href="{% static "js/libs/chosen/chosen.min.css" %}">
 
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="{% static 'js/libs/jquery/jquery-3.3.1.min.js' %}" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="{% static 'js/libs/openlayers-4.6.4/ol.js' %}"></script>
 
     <script src="{% static 'js/libs/datepicker/datepicker.js' %}"></script>
     <script src="{% static 'js/libs/datepicker/i18n/datepicker.en.js' %}"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+    <script src="{% static 'vendor/bootstrap/4.1.0/js/bootstrap.min.js' %}" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
 
     <script src="{% static "js/libs/ol-layerswitcher/ol-layerswitcher.js" %}"></script>
     <script src="{% static "js/libs/chosen/chosen.jquery.min.js" %}"></script>
 
-    <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.1.0/dist/latest/bootstrap-autocomplete.min.js"></script>
+    <script src="{% static 'vendor/bootstrap-autocomplete/2.1.0/bootstrap-autocomplete.min.js' %}"></script>
 
     <script>
         const bingMapKey = '{{ bing_map_key }}';

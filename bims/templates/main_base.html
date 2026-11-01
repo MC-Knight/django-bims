@@ -21,7 +21,7 @@
     {% endif %}
     <title>{% block title %} {% if custom_theme.site_name %}{{ custom_theme.site_name }}{% else %}{{ APPLICATION_NAME }}{% endif %} | {% block subtitle %}{% endblock %} {% endblock %}</title>
 
-    <link href="https://fonts.googleapis.com/css?family=Alegreya:400,400i,500,500i,700,700i|Roboto+Condensed:100,100i,300,300i,400,400i,500,500i,700,700i" rel="stylesheet">
+    <link href="{% static 'vendor/fonts/google-fonts.css' %}" rel="stylesheet">
     <link href="{% static "js/libs/bootstrap-4.0.0/css/bootstrap.min.css" %}" rel="stylesheet">
     <link href="{% static "js/libs/font-awesome/css/font-awesome.min.css" %}" rel="stylesheet">
     <script src="{% static "js/libs/jquery/jquery-3.3.1.min.js" %}"></script>
@@ -46,10 +46,11 @@
     {% endif %}
     <link href="{% static "css/main.css" %}" rel="stylesheet">
     <link href="{% static "css/fonts.css" %}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400i,500,500i,700,700i|Roboto+Condensed:100,100i,300,300i,400,400i,500,500i,700,700i" rel="stylesheet">
 
     <!-- Global Site Tag (gtag.js) - Google Analytics -->
+    {% if GOOGLE_ANALYTIC_KEY %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ GOOGLE_ANALYTIC_KEY }}"></script>
+    {% endif %}
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}

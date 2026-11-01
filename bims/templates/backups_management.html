@@ -11,7 +11,7 @@
 
     <link href="{% static "css/fish_form.css" %}" rel="stylesheet">
     <link href="{% static "css/dashboard_buttons.css" %}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <link rel="stylesheet" href="{% static 'vendor/jstree/3.2.1/themes/default/style.min.css' %}" />
 
 {% endblock %}
 
@@ -44,7 +44,7 @@
     <script src="{% static "js/libs/jquery/jquery-3.3.1.min.js" %}"></script>
     <script src="{% static "js/libs/jquery-ui-1.12.1/jquery-ui.min.js" %}"></script>
     <script src="{% static "js/libs/bootstrap-4.0.0/js/bootstrap.min.js" %}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+    <script src="{% static 'vendor/jstree/3.2.1/jstree.min.js' %}"></script>
 
     <script>
         let selectedFile = '';

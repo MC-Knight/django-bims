@@ -32,5 +32,9 @@ def proxy_request(request, path):
         new_path = path.split(':/')
         path = '://'.join(new_path)
 
-    request.session['access_token'] = None
+    # Only touch the session when there's a token to clear. Assigning
+    # unconditionally saved the session on every map tile request, and created
+    # a new session row per request for anonymous visitors.
+    if request.session.get('access_token') is not None:
+        request.session['access_token'] = None
     return proxy_view(request, url=path)

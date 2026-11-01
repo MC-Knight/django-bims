@@ -43,6 +43,19 @@ RUN pip install --no-cache-dir -r /REQUIREMENTS.txt && \
 #USER www-data
 ADD . /home/web/django_project
 WORKDIR /home/web/django_project
+
+# Bundle the map page's ~70 RequireJS modules into one minified file
+# (bims/static/js/optimized.js) so the browser makes a single request
+# instead of a long chain of them. collectstatic picks it up at startup.
+RUN mkdir -p /tmp/jsbuild && cd /tmp/jsbuild && \
+    npm install --no-audit --no-fund --silent requirejs@2.3.6 terser@5 && \
+    node node_modules/requirejs/bin/r.js \
+        -o /home/web/django_project/deployment/docker/requirejs.build.js && \
+    node_modules/.bin/terser \
+        /home/web/django_project/bims/static/js/optimized.js \
+        --compress --mangle \
+        -o /home/web/django_project/bims/static/js/optimized.js && \
+    cd / && rm -rf /tmp/jsbuild /root/.npm
 # RUN cd bims && \
 #     npm config set fetch-retries 5 && \
 #     npm config set fetch-retry-mintimeout 20000 && \
