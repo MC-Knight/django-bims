@@ -49,13 +49,15 @@ fi
 APP_CONTAINERS=(bims_prod_uwsgi bims_prod_worker bims_prod_geocontextworker bims_prod_searchworker)
 APP_SERVICES=(uwsgi worker geocontextworker searchworker)
 
+# Build while the old containers keep serving: if the build fails, set -e
+# stops the script here and the site stays up.
+echo "==> Building image (no cache)"
+docker-compose -f "${COMPOSE_FILE}" build --no-cache uwsgi
+
 echo "==> Stopping app containers"
 for container in "${APP_CONTAINERS[@]}"; do
     docker stop "${container}" 2>/dev/null || true
 done
-
-echo "==> Building image (no cache)"
-docker-compose -f "${COMPOSE_FILE}" build --no-cache uwsgi
 
 echo "==> Recreating app containers"
 docker-compose -f "${COMPOSE_FILE}" up -d "${APP_SERVICES[@]}"

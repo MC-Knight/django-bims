@@ -6,6 +6,15 @@ RUN mkdir -p /usr/src/{app,geonode}
 
 WORKDIR /usr/src/app
 
+# Debian 11 (bullseye) is end-of-life: deb.debian.org still serves its package
+# indexes but has removed the security-update .deb files (apt gets 404s).
+# Use archive.debian.org, which keeps everything. Its Release files are no
+# longer re-signed, so skip the expiry check.
+# TODO: move to python:3.10-slim-bookworm to get security updates again.
+RUN find /etc/apt -name '*.list' -o -name '*.sources' | \
+        xargs -r sed -i 's#deb.debian.org#archive.debian.org#g' && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+
 # Install system dependencies
 RUN echo "Updating apt-get" && \
     apt-get update && \
