@@ -56,6 +56,7 @@ x-geonode-django:
   depends_on:
     - geonode_db
     - geonode_redis
+    - geonode_memcached
     - geonode_gsconf
 
 x-common-django:
@@ -369,6 +370,18 @@ services:
       geonode:
         aliases:
           - redis
+
+  # Shared by django and celery: GeoNode 5.1.1 keeps login sessions
+  # (SESSION_ENGINE cached_db) and its background-task locks here, even
+  # with MEMCACHED_ENABLED=False, so it isn't optional.
+  geonode_memcached:
+    container_name: bims_prod_geonode_memcached
+    image: memcached:alpine
+    restart: unless-stopped
+    networks:
+      geonode:
+        aliases:
+          - memcached
 
   geonode_nginx:
     container_name: bims_prod_geonode_nginx

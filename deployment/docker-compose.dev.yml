@@ -38,6 +38,7 @@ x-geonode-django: &default-geonode-django
   depends_on:
     - geonode_db
     - geonode_redis
+    - geonode_memcached
     - geonode_gsconf
 
 x-common-django: &default-common-django
@@ -272,6 +273,15 @@ services:
       geonode:
         aliases:
           - redis
+
+  geonode_memcached:
+    container_name: bims_dev_geonode_memcached
+    image: memcached:alpine
+    restart: unless-stopped
+    networks:
+      geonode:
+        aliases:
+          - memcached
 
   geonode_nginx:
     container_name: bims_dev_geonode_nginx
