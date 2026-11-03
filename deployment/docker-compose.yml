@@ -15,6 +15,49 @@ volumes:
   static-data:
   media-data:
   geocontext-scheduler-data:
+  geonode-statics:
+  geonode-geoserver-datadir:
+  geonode-backup-restore:
+  geonode-data:
+  geonode-tmp:
+  geonode-dbdata:
+  geonode-redisdata:
+
+networks:
+  # GeoNode's private network, see the geonode_* services below
+  geonode:
+
+x-geonode-env:
+  &geonode-env
+  - geonode/common.env
+  - geonode/prod.env
+  - geonode/secrets.env
+
+x-geonode-django:
+  &default-geonode-django
+  image: geonode/geonode:5.1.1
+  restart: unless-stopped
+  env_file: *geonode-env
+  # Wait until the GeoNode databases accept logins, then hand over to the
+  # image's own entrypoint (migrations, fixtures, collectstatic). Done here
+  # rather than with depends_on "condition: service_healthy", which older
+  # docker-compose versions refuse to parse.
+  entrypoint:
+    - /bin/bash
+    - -c
+    - /usr/bin/wait-for-databases db && exec /usr/src/geonode/entrypoint.sh "$$@"
+    - geonode-entrypoint
+  volumes:
+    - geonode-statics:/mnt/volumes/statics
+    - geonode-geoserver-datadir:/geoserver_data/data
+    - geonode-backup-restore:/backup_restore
+    - geonode-data:/data
+    - geonode-tmp:/tmp
+  depends_on:
+    - geonode_db
+    - geonode_redis
+    - geonode_gsconf
+
 x-common-django:
   &default-common-django
   image: bims_uwsgi:latest
@@ -201,3 +244,132 @@ services:
     volumes:
       - /opt/bims/ipt:/usr/local/ip
     restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # GeoNode 5.1.1 -> https://geonode.rbis.ur.ac.rw
+  #
+  # A separate application with its own GeoServer, PostGIS and Redis. It
+  # lives on the private "geonode" network, where its containers use
+  # GeoNode's stock host names (django, geoserver, db, redis). Those names
+  # can't collide with BIMS's db / geoserver, which are on the default
+  # network; BIMS and its GeoServer are not touched.
+  #
+  # Settings: geonode/common.env + geonode/prod.env + geonode/secrets.env
+  # (secrets.env is created by geonode/make-secrets.sh; deploy.sh runs it).
+  # Only the GeoNode nginx is published, on 127.0.0.1:5443, for the host
+  # nginx (nginx/host/geonode.conf), which does TLS.
+  #
+  # Long-running like db and geoserver: deploy.sh leaves it alone. Start or
+  # update it with
+  #   docker-compose -f deployment/docker-compose.yml up -d geonode_nginx geonode_celery
+  # (geonode_nginx pulls in django, geoserver, db, redis via depends_on)
+  # ------------------------------------------------------------------
+  geonode_django:
+    <<: *default-geonode-django
+    container_name: bims_prod_geonode_django
+    environment:
+      - IS_CELERY=False
+    # Upstream's uwsgi.ini starts 16 workers and allows 128; flags after
+    # --ini override it. This host also runs BIMS.
+    command: uwsgi --ini /usr/src/geonode/uwsgi.ini --processes 8 --cheaper 2 --cheaper-initial 4 --cheaper-step 2
+    healthcheck:
+      test: curl -m 10 --fail --silent --output /dev/null http://django:8000/
+      start_period: 180s
+      interval: 60s
+      timeout: 10s
+      retries: 2
+    networks:
+      geonode:
+        aliases:
+          - django
+
+  geonode_celery:
+    <<: *default-geonode-django
+    container_name: bims_prod_geonode_celery
+    environment:
+      - IS_CELERY=True
+    command: celery-cmd
+    networks:
+      - geonode
+
+  geonode_geoserver:
+    container_name: bims_prod_geonode_geoserver
+    image: geonode/geoserver:2.28.6-latest
+    restart: unless-stopped
+    env_file: *geonode-env
+    volumes:
+      - geonode-statics:/mnt/volumes/statics
+      - geonode-geoserver-datadir:/geoserver_data/data
+      - geonode-backup-restore:/backup_restore
+      - geonode-data:/data
+      - geonode-tmp:/tmp
+    depends_on:
+      - geonode_gsconf
+      - geonode_django
+    healthcheck:
+      test: curl -m 10 --fail --silent --output /dev/null http://geoserver:8080/geoserver/ows
+      start_period: 180s
+      interval: 60s
+      timeout: 10s
+      retries: 2
+    networks:
+      geonode:
+        aliases:
+          - geoserver
+
+  # Seeds the GeoServer data dir volume with GeoNode's preconfigured one
+  # (OAuth2 login against GeoNode etc.). Stays up so the volume always has
+  # a running container, which keeps "docker volume prune" off it.
+  geonode_gsconf:
+    container_name: bims_prod_geonode_gsconf
+    image: geonode/geoserver_data:2.28.6-latest
+    entrypoint: sleep infinity
+    restart: unless-stopped
+    volumes:
+      - geonode-geoserver-datadir:/geoserver_data/data
+    networks:
+      - geonode
+
+  geonode_db:
+    container_name: bims_prod_geonode_db
+    image: geonode/postgis:15-3.5-latest
+    command: postgres -c max_connections=200
+    restart: unless-stopped
+    env_file: *geonode-env
+    volumes:
+      - geonode-dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -d postgres -U postgres
+    networks:
+      geonode:
+        aliases:
+          - db
+
+  geonode_redis:
+    container_name: bims_prod_geonode_redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - geonode-redisdata:/data
+    networks:
+      geonode:
+        aliases:
+          - redis
+
+  geonode_nginx:
+    container_name: bims_prod_geonode_nginx
+    image: geonode/nginx:1.31.7-latest
+    restart: unless-stopped
+    env_file: *geonode-env
+    ports:
+      # Loopback only; the public side is the host nginx
+      - "127.0.0.1:5443:443"
+    volumes:
+      - geonode-statics:/mnt/volumes/statics
+    depends_on:
+      - geonode_django
+      - geonode_geoserver
+    networks:
+      geonode:
+        aliases:
+          - geonode

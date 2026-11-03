@@ -142,3 +142,6 @@ deployment/geoserver_data
 .commit.txt
 .tag.txt
 node_modules/
+
+# GeoNode passwords, generated per machine by deployment/geonode/make-secrets.sh
+deployment/geonode/secrets.env

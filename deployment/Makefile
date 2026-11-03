@@ -6,6 +6,7 @@ dev:
 	@echo "------------------------------------------------------------------"
 	@echo "Running in dev mode"
 	@echo "------------------------------------------------------------------"
+	@bash geonode/make-secrets.sh
 	@docker-compose ${ARGS} up -d dev worker
 
 dev-test:

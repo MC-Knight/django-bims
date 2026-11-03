@@ -49,6 +49,12 @@ fi
 APP_CONTAINERS=(bims_prod_uwsgi bims_prod_worker bims_prod_geocontextworker bims_prod_searchworker)
 APP_SERVICES=(uwsgi worker geocontextworker searchworker)
 
+# The GeoNode services in docker-compose.yml read geonode/secrets.env, and
+# docker-compose refuses to load the file at all (even for BIMS-only
+# commands) while it's missing. Created once, never overwritten.
+# GeoNode itself is long-running and not restarted here.
+bash "${SCRIPT_DIR}/geonode/make-secrets.sh"
+
 # Build while the old containers keep serving: if the build fails, set -e
 # stops the script here and the site stays up.
 echo "==> Building image (no cache)"

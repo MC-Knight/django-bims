@@ -2,6 +2,44 @@ version: "3.7"
 volumes:
   rabbitmq:
   geoserver-datadir:
+  geonode-statics:
+  geonode-geoserver-datadir:
+  geonode-backup-restore:
+  geonode-data:
+  geonode-tmp:
+  geonode-dbdata:
+  geonode-redisdata:
+
+networks:
+  # GeoNode's private network, see the geonode_* services below
+  geonode:
+
+x-geonode-env: &geonode-env
+  - geonode/common.env
+  - geonode/dev.env
+  - geonode/secrets.env
+
+# Same as in docker-compose.yml; see the comments there.
+x-geonode-django: &default-geonode-django
+  image: geonode/geonode:5.1.1
+  restart: unless-stopped
+  env_file: *geonode-env
+  entrypoint:
+    - /bin/bash
+    - -c
+    - /usr/bin/wait-for-databases db && exec /usr/src/geonode/entrypoint.sh "$$@"
+    - geonode-entrypoint
+  volumes:
+    - geonode-statics:/mnt/volumes/statics
+    - geonode-geoserver-datadir:/geoserver_data/data
+    - geonode-backup-restore:/backup_restore
+    - geonode-data:/data
+    - geonode-tmp:/tmp
+  depends_on:
+    - geonode_db
+    - geonode_redis
+    - geonode_gsconf
+
 x-common-django: &default-common-django
   build:
     context: ../
@@ -142,3 +180,112 @@ services:
       - "63302:8080"
       # for ssh
       - "63303:22"
+
+  # GeoNode 5.1.1 -> http://localhost:63310
+  # See the GeoNode section in docker-compose.yml. Before the first start:
+  #   bash deployment/geonode/make-secrets.sh
+  # then
+  #   docker-compose -f deployment/docker-compose.dev.yml up -d geonode_nginx geonode_celery
+  geonode_django:
+    <<: *default-geonode-django
+    container_name: bims_dev_geonode_django
+    environment:
+      - IS_CELERY=False
+    command: uwsgi --ini /usr/src/geonode/uwsgi.ini --processes 4 --cheaper 1 --cheaper-initial 2 --cheaper-step 1
+    healthcheck:
+      test: curl -m 10 --fail --silent --output /dev/null http://django:8000/
+      start_period: 180s
+      interval: 60s
+      timeout: 10s
+      retries: 2
+    networks:
+      geonode:
+        aliases:
+          - django
+
+  geonode_celery:
+    <<: *default-geonode-django
+    container_name: bims_dev_geonode_celery
+    environment:
+      - IS_CELERY=True
+    command: celery-cmd
+    networks:
+      - geonode
+
+  geonode_geoserver:
+    container_name: bims_dev_geonode_geoserver
+    image: geonode/geoserver:2.28.6-latest
+    restart: unless-stopped
+    env_file: *geonode-env
+    volumes:
+      - geonode-statics:/mnt/volumes/statics
+      - geonode-geoserver-datadir:/geoserver_data/data
+      - geonode-backup-restore:/backup_restore
+      - geonode-data:/data
+      - geonode-tmp:/tmp
+    depends_on:
+      - geonode_gsconf
+      - geonode_django
+    healthcheck:
+      test: curl -m 10 --fail --silent --output /dev/null http://geoserver:8080/geoserver/ows
+      start_period: 180s
+      interval: 60s
+      timeout: 10s
+      retries: 2
+    networks:
+      geonode:
+        aliases:
+          - geoserver
+
+  geonode_gsconf:
+    container_name: bims_dev_geonode_gsconf
+    image: geonode/geoserver_data:2.28.6-latest
+    entrypoint: sleep infinity
+    restart: unless-stopped
+    volumes:
+      - geonode-geoserver-datadir:/geoserver_data/data
+    networks:
+      - geonode
+
+  geonode_db:
+    container_name: bims_dev_geonode_db
+    image: geonode/postgis:15-3.5-latest
+    command: postgres -c max_connections=200
+    restart: unless-stopped
+    env_file: *geonode-env
+    volumes:
+      - geonode-dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -d postgres -U postgres
+    networks:
+      geonode:
+        aliases:
+          - db
+
+  geonode_redis:
+    container_name: bims_dev_geonode_redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - geonode-redisdata:/data
+    networks:
+      geonode:
+        aliases:
+          - redis
+
+  geonode_nginx:
+    container_name: bims_dev_geonode_nginx
+    image: geonode/nginx:1.31.7-latest
+    restart: unless-stopped
+    env_file: *geonode-env
+    ports:
+      - "63310:80"
+    volumes:
+      - geonode-statics:/mnt/volumes/statics
+    depends_on:
+      - geonode_django
+      - geonode_geoserver
+    networks:
+      geonode:
+        aliases:
+          - geonode
