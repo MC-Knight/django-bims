@@ -204,19 +204,24 @@ services:
       - media-data:/home/web/media
       - ./logs:/var/log/
 
+  # Nightly pg_dump (23:00) to /opt/bims/backups/<year>/<month>/.
+  # The image's PostgreSQL major version must match the db's (11):
+  # pg_dump refuses to dump a newer server, so the old 9.6 image wrote
+  # 0-byte files every night. The 11.0 image takes POSTGRES_* variables
+  # (9.6 took PG*).
   dbbackups:
     container_name: bims_prod_dbbackups
-    image: kartoza/pg-backup:9.6
+    image: kartoza/pg-backup:11.0
     hostname: pg-backups
     depends_on:
       - db
     environment:
       - DUMPPREFIX=PG_bims
-      - PGUSER=${POSTGRES_USER:-docker}
-      - PGPASSWORD=${POSTGRES_PASS:-docker}
-      - PGPORT=5432
-      - PGHOST=bims_prod_db
-      - PGDATABASE=${POSTGRES_DBNAME:-gis}
+      - POSTGRES_USER=${POSTGRES_USER:-docker}
+      - POSTGRES_PASS=${POSTGRES_PASS:-docker}
+      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=bims_prod_db
+      - POSTGRES_DBNAME=${POSTGRES_DBNAME:-gis}
     volumes:
       - /opt/bims/backups:/backups
     restart: unless-stopped
