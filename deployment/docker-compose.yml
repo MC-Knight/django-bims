@@ -209,6 +209,10 @@ services:
   # pg_dump refuses to dump a newer server, so the old 9.6 image wrote
   # 0-byte files every night. The 11.0 image takes POSTGRES_* variables
   # (9.6 took PG*).
+  # The image never deletes old dumps (~400 MB each), so the command below
+  # adds a 23:30 cron job removing .dmp files older than BACKUP_KEEP_DAYS,
+  # then starts the image as usual. The cron file is written inside the
+  # container because cron ignores /etc/cron.d files not owned by root.
   dbbackups:
     container_name: bims_prod_dbbackups
     image: kartoza/pg-backup:11.0
@@ -222,6 +226,11 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_HOST=bims_prod_db
       - POSTGRES_DBNAME=${POSTGRES_DBNAME:-gis}
+      - BACKUP_KEEP_DAYS=30
+    command:
+      - /bin/bash
+      - -c
+      - echo "30 23 * * * root find /backups -type f -name '*.dmp' -mtime +$${BACKUP_KEEP_DAYS:-30} -delete" > /etc/cron.d/backups-cleanup && echo >> /etc/cron.d/backups-cleanup && exec /start.sh
     volumes:
       - /opt/bims/backups:/backups
     restart: unless-stopped
