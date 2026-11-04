@@ -2,6 +2,7 @@
 import os
 from distutils import util as distutil
 from django.db.models import Max, Min
+from django.utils import timezone
 from django.views.generic import TemplateView
 from django.contrib.flatpages.models import FlatPage
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -69,8 +70,10 @@ class MapPageView(LoginRequiredMixin,TemplateView):
             spatial_scale = 'SPATIAL'
         context['spatial_scale_title'] = spatial_scale
 
-        # get date filter
-        context['date_filter'] = {'min': '1900', 'max': '2008'}
+        # get date filter: from the oldest record to this year, so the
+        # slider doesn't stop at the newest record's year
+        current_year = timezone.now().year
+        context['date_filter'] = {'min': '1900', 'max': current_year}
         date_min = BiologicalCollectionRecord.objects.all(
         ).aggregate(min=Min('collection_date'))['min']
         date_max = BiologicalCollectionRecord.objects.all(
@@ -78,7 +81,7 @@ class MapPageView(LoginRequiredMixin,TemplateView):
         if date_min:
             context['date_filter']['min'] = date_min.year
         if date_max:
-            context['date_filter']['max'] = date_max.year
+            context['date_filter']['max'] = max(date_max.year, current_year)
 
         if self.request.user:
             try:
