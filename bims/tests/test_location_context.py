@@ -1,94 +1,98 @@
-import os
-import mock
 import json
-from django.test import TestCase, override_settings
+import mock
+from django.contrib.gis.geos import Point
+from django.test import TestCase
 
+from bims.utils import geoserver_context
 from bims.utils.location_context import get_location_context_data
 from bims.tests.model_factories import LocationSiteF, LocationContextGroupF
-from bims.models.location_context_group import LocationContextGroup
 from bims.models.location_context import LocationContext
 
 
-test_data_directory = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), 'data')
+SQUARE = {
+    'type': 'Polygon',
+    'coordinates': [[[29, -2], [30, -2], [30, -1], [29, -1], [29, -2]]]
+}
 
-def mocked_location_context_data(url):
+
+def mocked_wfs(properties):
+    """requests.get returning one square polygon with these properties"""
     class MockResponse:
-        def __init__(self, json_data, status_code):
-            self.json_data = json_data
-            self.status_code = status_code
+        status_code = 200
+        text = json.dumps({
+            'type': 'FeatureCollection',
+            'features': [{
+                'type': 'Feature',
+                'geometry': SQUARE,
+                'properties': properties
+            }]
+        })
+
+        def raise_for_status(self):
+            pass
 
         def json(self):
-            return self.json_data
+            return json.loads(self.text)
 
-    response_file = 'geocontext_data.json'
-    response_path = os.path.join(
-        test_data_directory, response_file)
-    if os.path.exists(response_path):
-        response_data = open(response_path)
-        json_data = response_data.read()
-        response_data.close()
-        return MockResponse(json.loads(json_data), 200)
-    return ''
+    return mock.Mock(return_value=MockResponse())
 
 
+@mock.patch(
+    'bims.tasks.location_context.generate_spatial_scale_filter', mock.Mock())
 class TestLocationContext(TestCase):
     def setUp(self) -> None:
-        self.site = LocationSiteF.create()
-        self.location_context_group_keys = 'group1'
+        geoserver_context._area_cache.clear()
+        self.site_inside = LocationSiteF.create(
+            geometry_point=Point(29.5, -1.5))
+        self.site_outside = LocationSiteF.create(
+            geometry_point=Point(31.5, -1.5))
+        self.group = LocationContextGroupF.create(
+            key='districts',
+            layer_name='geonode:district_boundary',
+            wms_url='https://geonode.example.org/geoserver/wms',
+            layer_identifier='district'
+        )
 
-    @override_settings(GEOCONTEXT_URL="test.gecontext.com")
-    @mock.patch('requests.get', mock.Mock(
-        side_effect=mocked_location_context_data))
     def test_get_location_context_data(self):
-        get_location_context_data(
-            group_keys=self.location_context_group_keys
-        )
-        self.assertTrue(
-            LocationContextGroup.objects.filter(
-                geocontext_group_key='hydrological_regions',
-            ).exists()
-        )
-        self.assertTrue(
-            LocationContext.objects.filter(
-                group__geocontext_group_key='hydrological_regions',
-                site=self.site
-            ).exists()
+        with mock.patch('requests.get', mocked_wfs(
+                {'district': 'Gasabo, Kigali'})) as requests_get:
+            get_location_context_data()
+        self.assertEqual(
+            requests_get.call_args[0][0],
+            'https://geonode.example.org/geoserver/ows'
         )
         self.assertEqual(
             LocationContext.objects.get(
-                group__key='value_with_comma',
-                group__geocontext_group_key='hydrological_regions',
-                site=self.site
-            ).value,
-            'test comma'
+                site=self.site_inside, group=self.group).value,
+            'Gasabo Kigali'
+        )
+        self.assertFalse(
+            LocationContext.objects.filter(
+                site=self.site_outside, group=self.group).exists()
         )
 
-    @override_settings(GEOCONTEXT_URL="test.gecontext.com")
-    @mock.patch('requests.get', mock.Mock(
-        side_effect=mocked_location_context_data))
-    def test_get_location_context_data_multiple_groups(self):
-        LocationContextGroupF.create(
-            id=1,
-            key='hydrological_regions',
-            geocontext_group_key='group1'
+    def test_old_value_is_replaced(self):
+        LocationContext.objects.create(
+            site=self.site_outside, group=self.group, value='Old district')
+        with mock.patch('requests.get', mocked_wfs({'district': 'Gasabo'})):
+            get_location_context_data(site_id=str(self.site_outside.id))
+        self.assertFalse(
+            LocationContext.objects.filter(
+                site=self.site_outside, group=self.group).exists()
         )
-        LocationContextGroupF.create(
-            id=2,
-            key='hydrological_regions',
-            geocontext_group_key='group1'
-        )
-        get_location_context_data(
-            group_keys=self.location_context_group_keys
-        )
-        self.assertEqual(
-            LocationContextGroup.objects.filter(
-                key='hydrological_regions',
-            ).count(), 1
-        )
-        self.assertTrue(
-            LocationContextGroup.objects.filter(
-                key='hydrological_regions',
-                id=1
-            ).exists()
+
+    def test_groups_without_a_layer_are_skipped(self):
+        LocationContextGroupF.create(key='no_layer')
+        with mock.patch('requests.get', mocked_wfs(
+                {'district': 'Gasabo'})) as requests_get:
+            get_location_context_data()
+        self.assertEqual(requests_get.call_count, 1)
+
+    def test_wrong_layer_identifier(self):
+        self.group.layer_identifier = 'DISTR_NAME'
+        self.group.save()
+        with mock.patch('requests.get', mocked_wfs({'district': 'Gasabo'})):
+            get_location_context_data()
+        self.assertFalse(
+            LocationContext.objects.filter(group=self.group).exists()
         )

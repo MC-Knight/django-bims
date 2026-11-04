@@ -110,6 +110,11 @@ x-common-django:
     - geoserver
     - rabbitmq
     - cache
+  # The server can't reach its own public address, so inside these
+  # containers GeoNode's hostname points at this host's nginx instead. Used
+  # to look up which area each site is in (bims/utils/geoserver_context.py).
+  extra_hosts:
+    - "geonode.rbis.ur.ac.rw:host-gateway"
   restart: unless-stopped
   user: root
 

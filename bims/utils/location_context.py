@@ -1,13 +1,9 @@
-import operator
-from functools import reduce
-from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel
 from bims.models.spatial_scale import SpatialScale
 from bims.models.spatial_scale_group import SpatialScaleGroup
 from bims.models.location_site import LocationSite, generate_site_code
-from bims.models.location_context import LocationContext
+from bims.utils.geoserver_context import update_location_contexts
 from bims.utils.logger import log
-from preferences import preferences
 
 
 def array_to_dict(array, key_name='key'):
@@ -96,85 +92,51 @@ def get_location_context_data(
         only_empty=False,
         should_generate_site_code=False):
     """
-    Get the location context for specific site or all sites
-    :param group_keys: Group keys used to fetch geocontext data
-        (separated by comma), if empty then use geocontext keys from
-        site setting
+    Get the location context for specific site or all sites, from the layers
+    set on the location context groups (see bims.utils.geoserver_context)
+    :param group_keys: Only update the groups with these keys or geocontext
+        group keys (list, or separated by comma). If empty then update every
+        group that has a layer
     :param site_id: Sites that will be updated, can be multiple sites
         if separated by comma. If empty then update all sites
     :param only_empty: Only add empty missing context data
     :param should_generate_site_code: Generate the site code after updating
     :return:
     """
-    # Get location context data from GeoContext
-
-    if not group_keys:
-        group_keys = preferences.GeocontextSetting.geocontext_keys.split(',')
-    else:
-        if not isinstance(group_keys, list):
-            group_keys = group_keys.split(',')
+    if group_keys and not isinstance(group_keys, list):
+        group_keys = group_keys.split(',')
 
     if site_id:
         location_sites = LocationSite.objects.filter(id__in=site_id.split(','))
     else:
         location_sites = LocationSite.objects.all()
 
-    if only_empty:
-        location_sites = location_sites.exclude(
-            reduce(operator.and_, (
-                Q(locationcontext__group__geocontext_group_key=x)
-                for x in group_keys)
-                   ))
-    num = len(location_sites)
-    i = 1
-
-    if num == 0:
+    if not location_sites.exists():
         log('No locations with applied filters were found')
         return
 
-    for location_site in location_sites:
-        log('Updating %s of %s, %s' % (i, num, location_site.name))
-        i += 1
-        all_context = None
-        if only_empty:
-            try:
-                all_context = list(
-                    LocationContext.objects.filter(
-                        site=location_site).values_list(
-                        'group__geocontext_group_key', flat=True)
-                )
-            except (ValueError, TypeError):
-                pass
-        for group_key in group_keys:
-            if (all_context and
-                    group_key in all_context):
-                log('Context data already exists for {}'.format(
-                    group_key
-                ))
-                continue
-            current_outcome, message = (
-                location_site.add_context_group(group_key))
-            success = current_outcome
-            log(str('[{status}] [{site_id}] [{group}] - {message}').format(
-                status='SUCCESS' if success else 'FAILED',
-                site_id=location_site.id,
-                message=message,
-                group=group_key
-            ))
+    results = update_location_contexts(
+        location_sites,
+        group_keys=group_keys,
+        only_empty=only_empty
+    )
+    for group_name, result in results.items():
+        log('[{group}] {result}'.format(group=group_name, result=result))
 
-            if should_generate_site_code:
-                site_code, catchments_data = generate_site_code(
-                    location_site,
-                    lat=location_site.latitude,
-                    lon=location_site.longitude
-                )
-                location_site.site_code = site_code
-                location_site.save()
-                log(str('Site code {site_code} '
-                    'generated for {site_id}').format(
-                    site_code=site_code,
-                    site_id=location_site.id
-                ))
+    if should_generate_site_code:
+        for location_site in location_sites:
+            site_code, catchments_data = generate_site_code(
+                location_site,
+                lat=location_site.latitude,
+                lon=location_site.longitude
+            )
+            location_site.site_code = site_code
+            location_site.save()
+            log(str('Site code {site_code} '
+                'generated for {site_id}').format(
+                site_code=site_code,
+                site_id=location_site.id
+            ))
 
 
 def merge_context_group(excluded_group=None, group_list=None):
