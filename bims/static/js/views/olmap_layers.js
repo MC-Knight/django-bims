@@ -936,38 +936,34 @@ define(['shared', 'backbone', 'underscore', 'jquery', 'jqueryUi', 'jqueryTouch',
                     try {
                         // Parse the XML response directly
                         let xmlDoc = response;
-                        
+
+                        // Only read direct children: getElementsByTagName searches
+                        // all descendants, so the root container <Layer> (which has
+                        // no <Name>) would pick up its first child's <Name> and
+                        // return the server-wide <Abstract> instead of the layer's.
+                        let childText = function (element, tagName) {
+                            for (let j = 0; j < element.childNodes.length; j++) {
+                                let child = element.childNodes[j];
+                                if (child.nodeType === 1 && (child.localName || child.nodeName) === tagName) {
+                                    return child.textContent || child.text;
+                                }
+                            }
+                            return '';
+                        };
+
                         // Get all Layer elements
                         let layers = xmlDoc.getElementsByTagName("Layer");
-                        
-                        // Search for the specific layer by name
+
+                        // Search for the specific layer by name. Names are bare
+                        // in workspace capabilities, prefixed in global ones.
                         for (let i = 0; i < layers.length; i++) {
-                            let nameElements = layers[i].getElementsByTagName("Name");
-                            if (nameElements.length > 0) {
-                                let layerNameText = nameElements[0].textContent || nameElements[0].text;
-                                // Check if this is the layer we're looking for
-                                if (layerNameText === layerKey || layerNameText === url_key || layerNameText.indexOf(url_key) >= 0) {
-                                    let abstractElements = layers[i].getElementsByTagName("Abstract");
-                                    if (abstractElements.length > 0) {
-                                        abstract_result = abstractElements[0].textContent || abstractElements[0].text;
-                                        break;
-                                    }
-                                }
+                            let layerNameText = childText(layers[i], "Name");
+                            if (layerNameText === layerKey || layerNameText === url_key) {
+                                abstract_result = childText(layers[i], "Abstract");
+                                break;
                             }
                         }
-                        
-                        // If no specific layer abstract found, try getting any Abstract element
-                        if (!abstract_result) {
-                            let allAbstracts = xmlDoc.getElementsByTagName("Abstract");
-                            for (let i = 0; i < allAbstracts.length; i++) {
-                                let abstractText = allAbstracts[i].textContent || allAbstracts[i].text;
-                                if (abstractText && abstractText.trim().length > 0) {
-                                    abstract_result = abstractText;
-                                    break;
-                                }
-                            }
-                        }
-                        
+
                         if (!abstract_result) {
                             abstract_result = "Abstract information unavailable.";
                         }
