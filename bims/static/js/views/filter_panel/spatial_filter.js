@@ -603,7 +603,7 @@ define([
                 let layer = new ol.layer.Tile({
                     source: new ol.source.TileWMS(options)
                 });
-                self.layerGroup.getLayers().getArray().push(layer);
+                self.layerGroup.getLayers().push(layer);
             });
         },
         outlineStyle: function (layerName) {

@@ -818,8 +818,11 @@ define([
             this.initExtent = this.getCurrentBbox();
         },
 
+        // ol.layer.Base, not a getSource() check: the spatial filter sends an
+        // ol.layer.Group (it has no source), and that check dropped it, so the
+        // red border of the selected areas never reached the map.
         removeLayer: function (layer) {
-            if (!layer || typeof layer.getSource !== 'function') {
+            if (!(layer instanceof ol.layer.Base)) {
                 console.warn('removeLayer: Invalid layer object provided', layer);
                 return;
             }
@@ -827,13 +830,15 @@ define([
         },
 
         addLayer: function (layer) {
-            // Validate that layer is an actual OpenLayers layer object
-            if (!layer || typeof layer.getSource !== 'function') {
+            if (!(layer instanceof ol.layer.Base)) {
                 return;
             }
 
             this.map.addLayer(layer);
 
+            if (typeof layer.getSource !== 'function') {
+                return;
+            }
             // Setup tile monitoring for new layer if it's visible
             try {
                 var source = layer.getSource();
