@@ -275,7 +275,7 @@ define([
         addSelectedSpatialFilterLayerFromJSON: function (json_string) {
             let all = JSON.parse(json_string);
             for (let i=0; i < all.length; i++) {
-                let parsed_data = all[0].split(',');
+                let parsed_data = all[i].split(',');
                 if (parsed_data.length === 2) {
                     parsed_data.push(this.groupKeyLabel);
                 }
@@ -562,17 +562,11 @@ define([
                 if (selectedLayer.length === 0) {
                     return true;
                 } else if (selectedLayer.length > 0 && selectedLayer[0] !== self.groupKeyLabel) {
-                    cqlFilters = "(";
-                    for (let i=0; i < selectedLayer.length; i++) {
-                        if (!selectedLayer[i]) {
-                            continue;
-                        }
-                        cqlFilters += "\'"+ selectedLayer[i] +"\'";
-                        if (i < selectedLayer.length - 1) {
-                            cqlFilters += ",";
-                        }
-                    }
-                    cqlFilters += ")";
+                    // CQL escapes a quote inside a string by doubling it.
+                    cqlFilters = "(" + selectedLayer
+                        .filter(function (value) { return value; })
+                        .map(function (value) { return "'" + String(value).replace(/'/g, "''") + "'"; })
+                        .join(",") + ")";
                     if (layerIdentifier) {
                         cqlFilters = `${layerIdentifier} in ${cqlFilters}`;
                     } else {
@@ -590,11 +584,19 @@ define([
                     url: wmsUrl,
                     params: {
                         LAYERS: wmsLayer,
-                        FORMAT: wmsFormat,
-                        TILED: true,
-                        STYLES: spatialFilterLayerStyle
+                        FORMAT: wmsFormat || 'image/png',
+                        TILED: true
                     }
                 };
+                if (!spatialFilterLayerStyle || spatialFilterLayerStyle === 'red_outline') {
+                    // Send the default outline with the request instead of
+                    // asking for a style by name: GeoNode's GeoServer has no
+                    // red_outline style, so the selected areas never drew.
+                    options.params.STYLES = '';
+                    options.params.SLD_BODY = self.outlineStyle(wmsLayer);
+                } else {
+                    options.params.STYLES = spatialFilterLayerStyle;
+                }
                 if (cqlFilters) {
                     options.params.CQL_FILTER = cqlFilters;
                 }
@@ -603,6 +605,18 @@ define([
                 });
                 self.layerGroup.getLayers().getArray().push(layer);
             });
+        },
+        outlineStyle: function (layerName) {
+            // A LineSymbolizer outlines polygons and also draws line layers.
+            let name = String(layerName)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return '<StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld">' +
+                '<NamedLayer><Name>' + name + '</Name><UserStyle><FeatureTypeStyle><Rule>' +
+                '<LineSymbolizer><Stroke>' +
+                '<CssParameter name="stroke">#FF0000</CssParameter>' +
+                '<CssParameter name="stroke-width">2</CssParameter>' +
+                '</Stroke></LineSymbolizer>' +
+                '</Rule></FeatureTypeStyle></UserStyle></NamedLayer></StyledLayerDescriptor>';
         },
         subPanelClicked: function (e) {
             var $panel = $($(e.target).next().get(0));
