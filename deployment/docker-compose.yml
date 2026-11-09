@@ -65,6 +65,9 @@ x-common-django:
   build:
     context: ../
     dockerfile: deployment/docker/Dockerfile
+    # The Dockerfile's last stage is "dev" (SSH, chromium, karma); without
+    # a target Docker builds the last stage, so name the server stage.
+    target: prod
   command: uwsgi --ini /home/web/django_project/uwsgi.ini
   hostname: uwsgi
   working_dir: /home/web/django_project
