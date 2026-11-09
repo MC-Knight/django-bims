@@ -283,10 +283,10 @@ urlpatterns = [
         name='moderator_contacted'),
 
     # RBIS Mods
-    url(r'^biodiversity-threats/$', biodiversity_threats_view,
-        name='biodiversity-threats'),
-    url(r'^biodiversity-threat/(?P<pk>\d+)/$', biodiversity_threat_detail_view,
-        name='biodiversity-threat-detail'),
+    # url(r'^biodiversity-threats/$', biodiversity_threats_view,
+    #     name='biodiversity-threats'),
+    # url(r'^biodiversity-threat/(?P<pk>\d+)/$', biodiversity_threat_detail_view,
+    #     name='biodiversity-threat-detail'),
     url(r'^biodiversity-assessments/$', biodiversity_assessments_view,
         name='biodiversity-assessments'),
     url(r'^biodiversity-assessment/(?P<pk>\d+)/$', biodiversity_assesment_detail_view,
