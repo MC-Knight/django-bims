@@ -10,10 +10,13 @@ WORKDIR /usr/src/app
 # indexes but has removed the security-update .deb files (apt gets 404s).
 # Use archive.debian.org, which keeps everything. Its Release files are no
 # longer re-signed, so skip the expiry check.
+# The server's link to archive.debian.org stalls at times (a download times
+# out after 30s), so retry each file rather than fail the whole apt step.
 # TODO: move to python:3.10-slim-bookworm to get security updates again.
 RUN find /etc/apt -name '*.list' -o -name '*.sources' | \
         xargs -r sed -i 's#deb.debian.org#archive.debian.org#g' && \
-    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+    printf '%s\n' 'Acquire::Check-Valid-Until "false";' 'Acquire::Retries "10";' \
+        > /etc/apt/apt.conf.d/99archive
 
 # Install system dependencies
 RUN echo "Updating apt-get" && \

@@ -57,8 +57,13 @@ bash "${SCRIPT_DIR}/geonode/make-secrets.sh"
 
 # Build while the old containers keep serving: if the build fails, set -e
 # stops the script here and the site stays up.
-echo "==> Building image (no cache)"
-docker-compose -f "${COMPOSE_FILE}" build --no-cache uwsgi
+# Docker's build cache is kept: steps whose inputs haven't changed (apt,
+# pip) are reused, so a deploy only re-downloads what changed. The code
+# copy changes every deploy, so the app itself is always rebuilt. Bullseye
+# is archived and the requirements are pinned, so a no-cache build would
+# only fetch the same files again over a link that stalls.
+echo "==> Building image"
+docker-compose -f "${COMPOSE_FILE}" build uwsgi
 
 echo "==> Stopping app containers"
 for container in "${APP_CONTAINERS[@]}"; do
@@ -79,7 +84,9 @@ docker container prune -f
 docker image prune -a -f
 docker volume prune -f
 docker network prune -f
-docker builder prune -a -f
-docker system prune -a --volumes -f
+# Keep the build cache that the next deploy reuses; only drop entries that
+# no build has used for 30 days. (No "docker system prune -a" here: on top
+# of the four prunes above, it would wipe the whole build cache.)
+docker builder prune -f --filter until=720h
 
 echo "==> Deploy finished"
